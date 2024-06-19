@@ -89,7 +89,7 @@ module.exports = {
         await new Promise(resolve => setTimeout(resolve, 5000));
       }
 
-      const cacheFolderPath = path.join(__dirname, "/cache");
+      const cacheFolderPath = path.join(__dirname, "/tmp");
       if (!fs.existsSync(cacheFolderPath)) {
         fs.mkdirSync(cacheFolderPath);
       }
