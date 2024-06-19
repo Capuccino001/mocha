@@ -71,7 +71,7 @@ module.exports = {
 
 async function downloadTrack(url) {
   const o = await getStreamFromURL(url);
-  const p = `${__dirname}/cache/${randomString()}.mp3`;
+  const p = `${__dirname}/tmp/${randomString()}.mp3`;
   const q = fs.createWriteStream(p);
   o.pipe(q);
 
