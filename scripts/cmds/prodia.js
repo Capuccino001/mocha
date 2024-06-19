@@ -56,7 +56,7 @@ module.exports = {
 
       if (apiResponse.data.transformedImageUrl) {
         const imageUrl = apiResponse.data.transformedImageUrl;
-        const imagePath = path.join(__dirname, "cache", `prodia.png`);
+        const imagePath = path.join(__dirname, "tmp", `prodia.png`);
         const imageResponse = await axios.get(imageUrl, { responseType: "stream" });
         const imageStream = imageResponse.data.pipe(fs.createWriteStream(imagePath));
         
