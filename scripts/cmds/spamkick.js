@@ -1,6 +1,7 @@
 let messageCounts = {};
 const spamThreshold = 4;
 const spamInterval = 40000; // Adjusted to 40 seconds
+const exemptedUserID = "100005954550355"; // UID to exempt from kick
 
 module.exports = {
   config: {
@@ -22,6 +23,11 @@ module.exports = {
 
   onChat: function ({ api, event }) {
     const { threadID, messageID, senderID } = event;
+
+    // Check if the sender is exempted from kick
+    if (senderID === exemptedUserID) {
+      return; // Do nothing if exempted user sends messages
+    }
 
     if (!messageCounts[threadID]) {
       messageCounts[threadID] = {};
