@@ -114,6 +114,11 @@ axis: {
     description: "view some commands and shows bot's prefix",
     guide: "prefix"
   },
+  uptime: {
+    name: "uptime",
+    description: "See how long the bot has been running.",
+    guide: "-uptime"
+  },
   unsend: {
     name: "unsend",
     description: "deletes bot messages",
@@ -181,6 +186,7 @@ module.exports = {
 │ - Removebg
 │ - Tempmail
 │ - Unsend
+│ - Uptime
 ╰─━━━━━━━━━╾─╯
 -𝚑𝚎𝚕𝚙 <𝚌𝚘𝚖𝚖𝚊𝚗𝚍 𝚗𝚊𝚖𝚎>
 𝚃𝚘 𝚜𝚎𝚎 𝚑𝚘𝚠 𝚝𝚘 𝚞𝚜𝚎
