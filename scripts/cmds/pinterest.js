@@ -10,6 +10,33 @@ const baseApiUrl = async () => {
   return base.data.api;
 };
 
+// Function to fetch images from an API
+const fetchImages = async (url, numberSearch, fetchedImageUrls) => {
+  const { data } = await axios.get(url);
+
+  if (Array.isArray(data) && data.length > 0) {
+    return await Promise.all(data.slice(0, numberSearch).map(async (item, i) => {
+      const imageUrl = item.image || item;
+      if (!fetchedImageUrls.includes(imageUrl)) {
+        fetchedImageUrls.push(imageUrl);
+        try {
+          const { data: imgBuffer } = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+          const imgPath = path.join(__dirname, 'tmp', `${i + 1}.jpg`);
+          await fs.outputFile(imgPath, imgBuffer);
+          return fs.createReadStream(imgPath);
+        } catch (error) {
+          console.error(`Error downloading image from ${imageUrl}:`, error);
+          return null;
+        }
+      } else {
+        return null;
+      }
+    }));
+  } else {
+    return [];
+  }
+};
+
 module.exports = {
   config: {
     name: "pinterest",
@@ -28,6 +55,9 @@ module.exports = {
   },
 
   onStart: async function ({ api, event, args }) {
+    const tmpDir = path.join(__dirname, 'tmp');
+    await fs.ensureDir(tmpDir);
+
     try {
       const keySearch = args.join(" ");
       const keySearchs = keySearch.substr(0, keySearch.indexOf('-')).trim();
@@ -35,35 +65,14 @@ module.exports = {
         throw new Error("Please follow this format:\n-pinterest cat -4");
       }
       let numberSearch = parseInt(keySearch.split("-").pop().trim()) || 1;
-      numberSearch = Math.min(Math.max(numberSearch, 1), 12); // Adjusted to ensure the range is between 1 and 12
+      numberSearch = Math.min(Math.max(numberSearch, 1), 12); // Ensure the range is between 1 and 12
 
       let imgData = [];
       let fetchedImageUrls = [];
 
       // Attempt to fetch images from the first API
       try {
-        const { data } = await axios.get(`https://api-samirxyz.onrender.com/api/Pinterest?query=${encodeURIComponent(keySearchs)}&number=${numberSearch}&apikey=global`);
-
-        if (Array.isArray(data) && data.length > 0) {
-          imgData = await Promise.all(data.slice(0, numberSearch).map(async (item, i) => {
-            const imageUrl = item;
-            if (!fetchedImageUrls.includes(imageUrl)) {
-              fetchedImageUrls.push(imageUrl);
-
-              try {
-                const { data: imgBuffer } = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-                const imgPath = path.join(__dirname, 'tmp', `${i + 1}.jpg`);
-                await fs.outputFile(imgPath, imgBuffer);
-                return fs.createReadStream(imgPath);
-              } catch (error) {
-                console.error(error);
-                return null;
-              }
-            } else {
-              return null;
-            }
-          }));
-        }
+        imgData = await fetchImages(`https://api-samirxyz.onrender.com/api/Pinterest?query=${encodeURIComponent(keySearchs)}&number=${numberSearch}&apikey=global`, numberSearch, fetchedImageUrls);
       } catch (error) {
         console.error("Error fetching images from first API:", error);
       }
@@ -71,28 +80,7 @@ module.exports = {
       // If no images were fetched from the first API, try the second API
       if (imgData.length === 0) {
         try {
-          const { data } = await axios.get(`https://celestial-dainsleif-v2.onrender.com/pinterest?pinte=${encodeURIComponent(keySearchs)}`);
-
-          if (Array.isArray(data) && data.length > 0) {
-            imgData = await Promise.all(data.slice(0, numberSearch).map(async (item, i) => {
-              const imageUrl = item.image;
-              if (!fetchedImageUrls.includes(imageUrl)) {
-                fetchedImageUrls.push(imageUrl);
-
-                try {
-                  const { data: imgBuffer } = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-                  const imgPath = path.join(__dirname, 'tmp', `${i + 1}.jpg`);
-                  await fs.outputFile(imgPath, imgBuffer);
-                  return fs.createReadStream(imgPath);
-                } catch (error) {
-                  console.error(error);
-                  return null;
-                }
-              } else {
-                return null;
-              }
-            }));
-          }
+          imgData = await fetchImages(`https://celestial-dainsleif-v2.onrender.com/pinterest?pinte=${encodeURIComponent(keySearchs)}`, numberSearch, fetchedImageUrls);
         } catch (error) {
           console.error("Error fetching images from second API:", error);
         }
@@ -101,30 +89,7 @@ module.exports = {
       // If still no images, try the new third API
       if (imgData.length === 0) {
         try {
-          const apiUrl = `https://itsaryan.onrender.com/api/pinterest?query=${encodeURIComponent(keySearchs)}&limits=${numberSearch}`;
-          const res = await axios.get(apiUrl);
-          const data = res.data;
-
-          if (Array.isArray(data) && data.length > 0) {
-            imgData = await Promise.all(data.slice(0, numberSearch).map(async (item, i) => {
-              const imageUrl = item;
-              if (!fetchedImageUrls.includes(imageUrl)) {
-                fetchedImageUrls.push(imageUrl);
-
-                try {
-                  const { data: imgBuffer } = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-                  const imgPath = path.join(__dirname, 'tmp', `${i + 1}.jpg`);
-                  await fs.outputFile(imgPath, imgBuffer);
-                  return fs.createReadStream(imgPath);
-                } catch (error) {
-                  console.error(error);
-                  return null;
-                }
-              } else {
-                return null;
-              }
-            }));
-          }
+          imgData = await fetchImages(`https://itsaryan.onrender.com/api/pinterest?query=${encodeURIComponent(keySearchs)}&limits=${numberSearch}`, numberSearch, fetchedImageUrls);
         } catch (error) {
           console.error("Error fetching images from third API:", error);
         }
@@ -133,35 +98,8 @@ module.exports = {
       // If still no images, try the fourth API
       if (imgData.length === 0) {
         try {
-          const queryAndLength = keySearch.split("-");
-          const q = queryAndLength[0].trim();
-          const length = queryAndLength[1].trim();
-
-          const response = await axios.get(
-            `${await baseApiUrl()}/pinterest?search=${encodeURIComponent(q)}&limit=${encodeURIComponent(length)}`
-          );
-          const data = response.data.data;
-
-          if (Array.isArray(data) && data.length > 0) {
-            imgData = await Promise.all(data.slice(0, numberSearch).map(async (item, i) => {
-              const imgUrl = item;
-              if (!fetchedImageUrls.includes(imgUrl)) {
-                fetchedImageUrls.push(imgUrl);
-
-                try {
-                  const { data: imgBuffer } = await axios.get(imgUrl, { responseType: 'arraybuffer' });
-                  const imgPath = path.join(__dirname, 'tmp', `${i + 1}.jpg`);
-                  await fs.outputFile(imgPath, imgBuffer);
-                  return fs.createReadStream(imgPath);
-                } catch (error) {
-                  console.error(error);
-                  return null;
-                }
-              } else {
-                return null;
-              }
-            }));
-          }
+          const baseApi = await baseApiUrl();
+          imgData = await fetchImages(`${baseApi}/pinterest?search=${encodeURIComponent(keySearchs)}&limit=${numberSearch}`, numberSearch, fetchedImageUrls);
         } catch (error) {
           console.error("Error fetching images from fourth API:", error);
         }
@@ -176,9 +114,6 @@ module.exports = {
         body: `Here are the top ${imgData.length} image results for "${keySearchs}":`
       }, event.threadID, event.messageID);
 
-      // Delete the entire 'tmp' folder after sending images
-      await fs.remove(path.join(__dirname, 'tmp'));
-
     } catch (error) {
       console.error("Error in Pinterest bot:", error);
       if (error.message === "No images found.") {
@@ -186,6 +121,9 @@ module.exports = {
       } else {
         return api.sendMessage(`📷 | ${error.message}`, event.threadID, event.messageID);
       }
+    } finally {
+      // Clean up the temporary files
+      await fs.remove(tmpDir);
     }
   }
 };
