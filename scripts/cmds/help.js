@@ -29,11 +29,6 @@ axis: {
     description: "an ai you can ask for anything",
     guide: "-axis what is life?"
     },
-  join: {
-    name: "join",
-    description: "Join existing group chats where the bot is in.",
-    guide: "-join"
-  },
   blackbox: {
     name: "blackbox",
     description: "BlackBox Ai that you can ask for anything.",
@@ -181,7 +176,6 @@ module.exports = {
 │  👥 | 𝙼𝚎𝚖𝚋𝚎𝚛𝚜
 │ - Font
 │ - Help
-│ - Join
 │ - Prefix
 │ - Removebg
 │ - Tempmail
