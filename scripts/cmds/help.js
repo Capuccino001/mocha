@@ -74,10 +74,10 @@ axis: {
     description: "Searches Images in Pinterest ",
     guide: "-pinterest cat -10"
   },
-  prodia: {
-    name: "prodia",
+  dalle: {
+    name: "dalle",
     description: "make images through texts",
-    guide: "-prodia cat"
+    guide: "-dalle cat in a hoodie"
   },
   remini: {
     name: "remini",
@@ -166,9 +166,9 @@ module.exports = {
 ╭─╼━━━━━━━━╾─╮
 │  🖼 | 𝙸𝚖𝚊𝚐𝚎
 │ - Animagine
+│ - Dalle
 │ - Gmage
 │ - Pinterest
-│ - Prodia
 │ - Remini
 ╰─━━━━━━━━━╾─╯
 ╭─╼━━━━━━━━╾─╮
