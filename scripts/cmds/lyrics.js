@@ -3,6 +3,11 @@ const axios = require("axios");
 module.exports = {
   config: {
     name: "lyrics",
+    version: "1.0",
+    author: "rulex-al/loufi",
+    countDown: 5,
+    role: 0,
+    category: "music"
   },
 
   onStart: async function ({ api, event, args }) {
