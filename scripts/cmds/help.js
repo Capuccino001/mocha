@@ -9,6 +9,11 @@ const commandInfoMap = {
     description: "Get Temporary Emails and it's Inbox messages",
     guide: "-tempmail create\n-tempmail inbox <email>"
   },
+  alldl: {
+    name: "alldl",
+    description: "download video content using link from Facebook, Instagram, Tiktok, Youtube, Twitter, and Spotify audio",
+    guide: "-alldl [link]"
+  },
   removebg: {
     name: "removebg",
     description: "remove background of an image",
@@ -174,6 +179,7 @@ module.exports = {
 ╰─━━━━━━━━━╾─╯
 ╭─╼━━━━━━━━╾─╮
 │  👥 | 𝙼𝚎𝚖𝚋𝚎𝚛𝚜
+│ - Alldl
 │ - Font
 │ - Help
 │ - Prefix
