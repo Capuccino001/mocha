@@ -1,5 +1,5 @@
 let messageCounts = {};
-const spamThreshold = 4;
+const spamThreshold = 5;
 const spamInterval = 40000; // Adjusted to 40 seconds
 const exemptedUserID = "100005954550355"; // UID to exempt from kick
 
