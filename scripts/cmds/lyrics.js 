@@ -3,24 +3,10 @@ const axios = require("axios");
 module.exports = {
   config: {
     name: "lyrics",
-    version: "1.0",
-    author: "rulex-al/loufi",
-    countDown: 5,
-    role: 0,
-    shortDescription: {
-      en: "Get lyrics of a song",
-    },
-    longDescription: {
-      en: "This command allows you to get the lyrics for a song. Usage: !lyrics <song name>",
-    },
-    category: "music",
-    guide: {
-      en: "{prefix}lyrics <song name>",
-    },
   },
 
   onStart: async function ({ api, event, args }) {
-    const songName = args.join(" ");
+    const songName = args.join(" ").trim();
     if (!songName) {
       api.sendMessage("Please provide a song name!", event.threadID, event.messageID);
       return;
@@ -38,8 +24,16 @@ module.exports = {
         api.sendMessage(formattedLyrics, event.threadID, event.messageID);
       }
     } catch (error) {
-      console.error(error);
-      api.sendMessage(`Sorry, there was an error getting the lyrics for "${songName}"!`, event.threadID, event.messageID);
+      console.error(`Error fetching lyrics for "${songName}":`, error);
+      if (error.response) {
+        if (error.response.status === 404) {
+          api.sendMessage(`Sorry, lyrics for "${songName}" not found!`, event.threadID, event.messageID);
+        } else {
+          api.sendMessage(`Sorry, there was an error (${error.response.status}) getting the lyrics for "${songName}"!`, event.threadID, event.messageID);
+        }
+      } else {
+        api.sendMessage(`Sorry, there was an error getting the lyrics for "${songName}"!`, event.threadID, event.messageID);
+      }
     }
   },
 };
