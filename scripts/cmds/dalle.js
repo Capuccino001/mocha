@@ -38,6 +38,13 @@ module.exports = {
       message.reply({
         body: "",
         attachment: stream,
+      }, (err) => {
+        if (err) {
+          console.error("Error sending message:", err);
+        } else {
+          // Delete the image after it has been sent
+          fs.unlinkSync(imagePath);
+        }
       });
     } catch (error) {
       console.error("Error:", error);
