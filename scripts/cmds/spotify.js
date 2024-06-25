@@ -16,67 +16,72 @@ module.exports = {
   },
 
   onStart: async function ({ api, event, args, message }) {
-     api.setMessageReaction("🕢", event.messageID, (err) => {}, true);
+    api.setMessageReaction("🕢", event.messageID, (err) => {}, true);
     try {
-      let b = '';
+      let songTitle = '';
 
-      const c = async () => {
-        const d = event.messageReply.attachments[0];
-        if (d.type === "audio" || d.type === "video") {
-          const e = await shortenURL(d.url);
-          const f = await axios.get(`https://audio-recom.onrender.com/kshitiz?url=${encodeURIComponent(e)}`);
-          return f.data.title;
+      const getSongTitleFromAttachment = async () => {
+        const attachment = event.messageReply.attachments[0];
+        if (attachment.type === "audio" || attachment.type === "video") {
+          const shortenedURL = await shortenURL(attachment.url);
+          const response = await axios.get(`https://audio-recom.onrender.com/kshitiz?url=${encodeURIComponent(shortenedURL)}`);
+          return response.data.title;
         } else {
           throw new Error("Invalid attachment type.");
         }
       };
 
       if (event.messageReply && event.messageReply.attachments && event.messageReply.attachments.length > 0) {
-        b = await c();
+        songTitle = await getSongTitleFromAttachment();
       } else if (args.length === 0) {
         throw new Error("Please provide a song name.");
       } else {
-        b = args.join(" ");
+        songTitle = args.join(" ");
       }
 
-      const g = await axios.get(`https://spotify-play-iota.vercel.app/spotify?query=${encodeURIComponent(b)}`);
-      const h = g.data.trackURLs;
-      if (!h || h.length === 0) {
+      const response = await axios.get(`https://spotify-play-iota.vercel.app/spotify?query=${encodeURIComponent(songTitle)}`);
+      const trackURLs = response.data.trackURLs;
+      if (!trackURLs || trackURLs.length === 0) {
         throw new Error("No track found for the provided song name.");
       }
 
-      const i = h[0];
-      const j = await axios.get(`https://sp-dl-bice.vercel.app/spotify?id=${encodeURIComponent(i)}`);
-      const k = j.data.download_link;
+      const trackID = trackURLs[0];
+      const downloadResponse = await axios.get(`https://sp-dl-bice.vercel.app/spotify?id=${encodeURIComponent(trackID)}`);
+      const downloadLink = downloadResponse.data.download_link;
 
-      const l = await downloadTrack(k);
-
-      const m = await shortenURL(k);
+      const filePath = await downloadTrack(downloadLink);
 
       await message.reply({
-        body: `🎧 Playing: ${b}`,
-        attachment: fs.createReadStream(l)
+        body: `🎧 Playing: ${songTitle}`,
+        attachment: fs.createReadStream(filePath)
+      });
+
+      // Delete the downloaded file after sending
+      fs.unlink(filePath, (err) => {
+        if (err) console.error("Error deleting file:", err);
+        else console.log("File deleted successfully.");
       });
 
       console.log("Audio sent successfully.");
-
-    } catch (n) {
-      console.error("Error occurred:", n);
-      message.reply(`An error occurred: ${n.message}`);
-    } finally {
-    
+    } catch (error) {
+      console.error("Error occurred:", error);
+      message.reply(`An error occurred: ${error.message}`);
     }
   }
 };
 
 async function downloadTrack(url) {
-  const o = await getStreamFromURL(url);
-  const p = `${__dirname}/tmp/${randomString()}.mp3`;
-  const q = fs.createWriteStream(p);
-  o.pipe(q);
+  const stream = await getStreamFromURL(url);
+  const filePath = `${__dirname}/tmp/${randomString()}.mp3`;
+
+  // Ensure the tmp directory exists
+  await fs.ensureDir(`${__dirname}/tmp`);
+
+  const writeStream = fs.createWriteStream(filePath);
+  stream.pipe(writeStream);
 
   return new Promise((resolve, reject) => {
-    q.on('finish', () => resolve(p));
-    q.on('error', reject);
+    writeStream.on('finish', () => resolve(filePath));
+    writeStream.on('error', reject);
   });
 }
