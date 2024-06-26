@@ -24,16 +24,18 @@ module.exports = {
     const cacheFolderPath = path.join(__dirname, 'cache');
     const tmpFolderPath = path.join(__dirname, 'tmp');
 
-    const cleanFolder = async (folderPath) => {
+    const cleanFolder = async (folderPath, exemptFile) => {
       try {
         const files = await fs.readdir(folderPath);
         if (files.length > 0) {
           await Promise.all(files.map(async (file) => {
-            const filePath = path.join(folderPath, file);
-            await fs.unlink(filePath);
-            console.log(`File ${file} deleted successfully from ${folderPath}!`);
+            if (file !== exemptFile) {
+              const filePath = path.join(folderPath, file);
+              await fs.unlink(filePath);
+              console.log(`File ${file} deleted successfully from ${folderPath}!`);
+            }
           }));
-          console.log(`All files in the ${folderPath} folder deleted successfully!`);
+          console.log(`All files in the ${folderPath} folder deleted successfully, except ${exemptFile}!`);
         } else {
           console.log(`${folderPath} folder is empty.`);
         }
@@ -48,7 +50,7 @@ module.exports = {
 
     api.sendMessage({ body: 'Cleaning cache and tmp folders...', attachment: null }, event.threadID, async () => {
       await cleanFolder(cacheFolderPath);
-      await cleanFolder(tmpFolderPath);
+      await cleanFolder(tmpFolderPath, '.gitkeep');
       api.sendMessage({ body: 'Cache and tmp folders cleaned successfully!' }, event.threadID);
     });
   },
