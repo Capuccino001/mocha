@@ -72,7 +72,7 @@ module.exports = {
 
       // Attempt to fetch images from the first API
       try {
-        imgData = await fetchImages(`https://api-samirxyz.onrender.com/api/Pinterest?query=${encodeURIComponent(keySearchs)}&number=${numberSearch}&apikey=global`, numberSearch, fetchedImageUrls);
+        imgData = await fetchImages(`https://samirxpikachu.onrender.com/pinterest?query=${encodeURIComponent(keySearchs)}&number=${numberSearch}&apikey=global`, numberSearch, fetchedImageUrls);
       } catch (error) {
         console.error("Error fetching images from first API:", error);
       }
