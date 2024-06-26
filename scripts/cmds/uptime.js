@@ -8,7 +8,7 @@ module.exports = {
     aliases: ["upt","stat"],
     version: "1.0",
     author: "JARiF@Cock",
-    role: 2,
+    role: 0,
     category: "owner",
     guide: {
       en: "Use {p}info"
