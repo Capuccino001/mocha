@@ -96,25 +96,15 @@ module.exports = {
     onChat: async function ({ event, message, api }) {
         const messageContent = event.body.trim().toLowerCase();
 
-        // Check if the message is a reply and not from the bot itself
-        if (event.isGroup && event.messageReply && event.senderID !== api.getCurrentUserID()) {
-            try {
-                const { response, messageID } = await getAIResponse(messageContent, event.senderID, event.messageID);
-                lastResponseMessageID = messageID;
-                api.sendMessage(`🧋✨ | 𝙼𝚘𝚌𝚑𝚊 𝙰𝚒\n━━━━━━━━━━━━━━━━\n${response}\n━━━━━━━━━━━━━━━━`, event.threadID, messageID);
-            } catch (error) {
-                console.error("Error in onChat (reply):", error.message);
-                api.sendMessage("An error occurred while processing your request.", event.threadID);
-            }
-        } else if (messageContent.startsWith("ai") && event.senderID !== api.getCurrentUserID()) {
-            // Handle messages that start with "ai" and are not from the bot itself
+        // Check if the message is a reply to the bot's message or starts with "ai"
+        if ((event.messageReply && event.messageReply.senderID === api.getCurrentUserID()) || (messageContent.startsWith("ai") && event.senderID !== api.getCurrentUserID())) {
             const input = messageContent.replace(/^ai\s*/, "").trim();
             try {
-                const { response, messageID } = await getAIResponse(input, event.senderID, message.messageID);
+                const { response, messageID } = await getAIResponse(input, event.senderID, event.messageID);
                 lastResponseMessageID = messageID;
                 api.sendMessage(`🧋✨ | 𝙼𝚘𝚌𝚑𝚊 𝙰𝚒\n━━━━━━━━━━━━━━━━\n${response}\n━━━━━━━━━━━━━━━━`, event.threadID, messageID);
             } catch (error) {
-                console.error("Error in onChat (ai):", error.message);
+                console.error("Error in onChat:", error.message);
                 api.sendMessage("An error occurred while processing your request.", event.threadID);
             }
         }
