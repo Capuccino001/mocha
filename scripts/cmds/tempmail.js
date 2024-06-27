@@ -30,7 +30,13 @@ module.exports = {
             email = response.data.email;
           } catch (error) {
             console.error("❌ | Secondary API failed for email generation", error);
-            return api.sendMessage("❌ | Failed to generate email. Please try again later.", event.threadID, event.messageID);
+            try {
+              const response = await axios.get("https://t-mail.vercel.app/api/generate_email");
+              email = response.data.email;
+            } catch (error) {
+              console.error("❌ | Tertiary API failed for email generation", error);
+              return api.sendMessage("❌ | Failed to generate email. Please try again later.", event.threadID, event.messageID);
+            }
           }
         }
         return api.sendMessage(`📩 Generated email: ${email}`, event.threadID, event.messageID);
@@ -51,7 +57,13 @@ module.exports = {
             inboxMessages = inboxResponse.data;
           } catch (error) {
             console.error("❌ | Secondary API failed for fetching inbox messages", error);
-            return api.sendMessage("❌ | Failed to retrieve inbox messages. Please try again later.", event.threadID, event.messageID);
+            try {
+              const inboxResponse = await axios.get(`https://t-mail.vercel.app/api/inbox?email=${email}`);
+              inboxMessages = inboxResponse.data;
+            } catch (error) {
+              console.error("❌ | Tertiary API failed for fetching inbox messages", error);
+              return api.sendMessage("❌ | Failed to retrieve inbox messages. Please try again later.", event.threadID, event.messageID);
+            }
           }
         }
 
