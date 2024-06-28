@@ -4,6 +4,11 @@ const commandInfoMap = {
     description: "Ai Based on GPT-4",
     guide: "-ai what is life?"
     },
+  llama: {
+    name: "llama",
+    description: "An Ai developed by Meta Ai, a research division of meta platforms.",
+    guide: "-llama what is life?"
+    },
   tempmail: {
     name: "tempmail",
     description: "Get Temporary Emails and it's Inbox messages",
@@ -152,6 +157,7 @@ module.exports = {
 │  📖 | 𝙴𝚍𝚞𝚌𝚊𝚝𝚒𝚘𝚗
 │ - AI
 │ - Blackbox
+│ - Llama
 │ - Gemini
 │ - Translate
 ╰─━━━━━━━━━╾─╯
