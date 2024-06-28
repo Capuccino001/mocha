@@ -7,7 +7,8 @@ const services = [
   { url: 'https://gemini-ai-pearl-two.vercel.app/kshitiz', params: (prompt, uid) => ({ prompt, uid, apikey: 'kshitiz' }) },
   { url: 'https://samirxpikachu.onrender.com/gemini', params: (prompt, uid) => ({ text: prompt, uid }) },
   { url: 'http://zcdsphapilist.replit.app/gemini', params: (prompt) => ({ prompt }) },
-  { url: 'http://nash-rest-api.replit.app/gemini', params: (prompt) => ({ prompt }) }
+  { url: 'http://nash-rest-api.replit.app/gemini', params: (prompt) => ({ prompt }) },
+  { url: 'https://api.onlytris.space/gemini-pro', params: (prompt) => ({ question: prompt }) }
 ];
 
 module.exports = {
