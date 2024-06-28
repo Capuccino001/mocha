@@ -2,6 +2,21 @@ const axios = require("axios");
 const fs = require("fs-extra");
 const path = require("path");
 
+// List of API URLs
+const services = [
+  'https://samirxpikachu.onrender.com/pinterest',
+  'https://celestial-dainsleif-v2.onrender.com/pinterest',
+  'https://itsaryan.onrender.com/api/pinterest',
+  async () => {
+    const baseApi = await baseApiUrl();
+    return `${baseApi}/pinterest`;
+  },
+  'https://api.kenliejugarap.com/pinterestbymarjhun/?search=',
+  'https://openapi-idk8.onrender.com/pinterest',
+  'https://jonellccprojectapis10.adaptable.app/api/pin?title=wallpaper&count=10',
+  'http://markdevs-last-api.onrender.com/api/pinterest?search=&amount=' // New API added
+];
+
 // Function to get base API URL for the fourth API
 const baseApiUrl = async () => {
   const base = await axios.get(
@@ -11,29 +26,55 @@ const baseApiUrl = async () => {
 };
 
 // Function to fetch images from an API
-const fetchImages = async (url, numberSearch, fetchedImageUrls) => {
-  const { data } = await axios.get(url);
+const fetchImages = async (url, params, fetchedImageUrls) => {
+  try {
+    const { data } = await axios.get(url, { params });
 
-  if (Array.isArray(data) && data.length > 0) {
-    return await Promise.all(data.slice(0, numberSearch).map(async (item, i) => {
-      const imageUrl = item.image || item;
-      if (!fetchedImageUrls.includes(imageUrl)) {
-        fetchedImageUrls.push(imageUrl);
-        try {
-          const { data: imgBuffer } = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-          const imgPath = path.join(__dirname, 'tmp', `${i + 1}.jpg`);
-          await fs.outputFile(imgPath, imgBuffer);
-          return fs.createReadStream(imgPath);
-        } catch (error) {
-          console.error(`Error downloading image from ${imageUrl}:`, error);
+    if (Array.isArray(data) && data.length > 0) {
+      return await Promise.all(data.slice(0, params.number || params.limit || 1).map(async (item, i) => {
+        const imageUrl = item.image || item;
+        if (!fetchedImageUrls.includes(imageUrl)) {
+          fetchedImageUrls.push(imageUrl);
+          try {
+            const { data: imgBuffer } = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+            const imgPath = path.join(__dirname, 'tmp', `${i + 1}.jpg`);
+            await fs.outputFile(imgPath, imgBuffer);
+            return fs.createReadStream(imgPath);
+          } catch (error) {
+            console.error(`Error downloading image from ${imageUrl}:`, error);
+            return null;
+          }
+        } else {
           return null;
         }
-      } else {
-        return null;
-      }
-    }));
-  } else {
+      }));
+    } else {
+      return [];
+    }
+  } catch (error) {
+    console.error(`Error fetching images from ${url}:`, error);
     return [];
+  }
+};
+
+// Function to get API parameters based on the URL
+const getApiParams = (url, keySearch, numberSearch) => {
+  if (url.includes('samirxpikachu')) {
+    return { query: keySearch, number: numberSearch, apikey: 'global' };
+  } else if (url.includes('celestial-dainsleif-v2')) {
+    return { pinte: keySearch, limit: numberSearch };
+  } else if (url.includes('itsaryan')) {
+    return { query: keySearch, limits: numberSearch };
+  } else if (url.includes('api.kenliejugarap.com/pinterestbymarjhun')) {
+    return { search: encodeURIComponent(keySearch), limit: numberSearch };
+  } else if (url.includes('openapi-idk8')) {
+    return { search: keySearch, count: numberSearch };
+  } else if (url.includes('jonellccprojectapis10')) {
+    return { title: keySearch, count: numberSearch };
+  } else if (url.includes('markdevs-last-api')) {
+    return { search: keySearch, amount: numberSearch };
+  } else {
+    return { search: keySearch, limit: numberSearch };
   }
 };
 
@@ -65,43 +106,23 @@ module.exports = {
         throw new Error("Please follow this format:\n-pinterest cat -4");
       }
       let numberSearch = parseInt(keySearch.split("-").pop().trim()) || 1;
-      numberSearch = Math.min(Math.max(numberSearch, 1), 12); // Ensure the range is between 1 and 12
+      numberSearch = Math.min(Math.max(numberSearch, 1), 15); // Ensure the range is between 1 and 15
 
       let imgData = [];
       let fetchedImageUrls = [];
 
-      // Attempt to fetch images from the first API
-      try {
-        imgData = await fetchImages(`https://samirxpikachu.onrender.com/pinterest?query=${encodeURIComponent(keySearchs)}&number=${numberSearch}&apikey=global`, numberSearch, fetchedImageUrls);
-      } catch (error) {
-        console.error("Error fetching images from first API:", error);
-      }
-
-      // If no images were fetched from the first API, try the second API
-      if (imgData.length === 0) {
+      // Iterate through API services to fetch images sequentially
+      for (let i = 0; i < services.length; i++) {
+        const service = services[i];
         try {
-          imgData = await fetchImages(`https://celestial-dainsleif-v2.onrender.com/pinterest?pinte=${encodeURIComponent(keySearchs)}`, numberSearch, fetchedImageUrls);
+          const url = typeof service === 'function' ? await service() : service;
+          const params = getApiParams(url, keySearchs, numberSearch);
+          imgData = await fetchImages(url, params, fetchedImageUrls);
+          if (imgData.length > 0) {
+            break; // Exit loop if images are fetched successfully
+          }
         } catch (error) {
-          console.error("Error fetching images from second API:", error);
-        }
-      }
-
-      // If still no images, try the new third API
-      if (imgData.length === 0) {
-        try {
-          imgData = await fetchImages(`https://itsaryan.onrender.com/api/pinterest?query=${encodeURIComponent(keySearchs)}&limits=${numberSearch}`, numberSearch, fetchedImageUrls);
-        } catch (error) {
-          console.error("Error fetching images from third API:", error);
-        }
-      }
-
-      // If still no images, try the fourth API
-      if (imgData.length === 0) {
-        try {
-          const baseApi = await baseApiUrl();
-          imgData = await fetchImages(`${baseApi}/pinterest?search=${encodeURIComponent(keySearchs)}&limit=${numberSearch}`, numberSearch, fetchedImageUrls);
-        } catch (error) {
-          console.error("Error fetching images from fourth API:", error);
+          console.error(`Error fetching images from API ${i + 1}:`, error);
         }
       }
 
