@@ -42,7 +42,7 @@ async function fetchFromAI(url, params = {}) {
 module.exports = {
     config: {
         name: "llama",
-        version: "1.0",
+        version: "1.1",
         author: "Marjhun Baylon",
         countDown: 10,
         role: 0,
