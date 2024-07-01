@@ -96,6 +96,12 @@ module.exports = {
     onChat: async function ({ event, message, api }) {
         const messageContent = event.body.trim().toLowerCase();
 
+        // Check if the message contains forbidden keywords
+        const forbiddenKeywords = ["-unsend", "-remini", "-removebg"];
+        if (forbiddenKeywords.some(keyword => messageContent.includes(keyword))) {
+            return;
+        }
+
         // Check if the message is a reply to the bot's message or starts with "ai"
         if ((event.messageReply && event.messageReply.senderID === api.getCurrentUserID()) || (messageContent.startsWith("ai") && event.senderID !== api.getCurrentUserID())) {
             const input = messageContent.replace(/^ai\s*/, "").trim();
