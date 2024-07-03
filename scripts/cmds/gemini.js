@@ -103,7 +103,7 @@ async function fallbackGeminiService(event, prompt, message, commandName) {
     try {
       const response = await axios.get(service.url, { params: service.params(prompt, senderID) });
       const answer = response.data.answer || response.data;
-      message.reply(answer, (err, info) => {
+      message.reply(formatMessage(answer), (err, info) => {
         if (!err) {
           global.GoatBot.onReply.set(info.messageID, {
             commandName,
@@ -118,7 +118,7 @@ async function fallbackGeminiService(event, prompt, message, commandName) {
     }
   }
 
-  message.reply("An error occurred while processing the request.");
+  message.reply(formatMessage("An error occurred while processing the request."));
 }
 
 async function prepareReplyOptions(content, imageUrls) {
@@ -152,7 +152,7 @@ async function prepareReplyOptions(content, imageUrls) {
 }
 
 function formatMessage(content) {
-  const header = "👩‍💻 | 𝙶𝚘𝚘𝚐𝚕𝚎 𝙶𝚎𝚖𝚒𝚗𝚒 |\n━━━━━━━━━━━━━━━━\n";
+  const header = "👩‍💻 | 𝙶𝚎𝚖𝚒𝚗𝚒 |\n━━━━━━━━━━━━━━━━\n";
   const footer = "\n━━━━━━━━━━━━━━━━";
   return header + content + footer;
 }
