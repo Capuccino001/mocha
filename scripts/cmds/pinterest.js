@@ -19,9 +19,7 @@ const services = [
 
 // Function to get base API URL for the fourth API
 const baseApiUrl = async () => {
-  const base = await axios.get(
-    `https://raw.githubusercontent.com/Blankid018/D1PT0/main/baseApiUrl.json`
-  );
+  const base = await axios.get('https://raw.githubusercontent.com/Blankid018/D1PT0/main/baseApiUrl.json');
   return base.data.api;
 };
 
@@ -31,7 +29,7 @@ const fetchImages = async (url, params, fetchedImageUrls) => {
     const { data } = await axios.get(url, { params });
 
     if (Array.isArray(data) && data.length > 0) {
-      return await Promise.all(data.slice(0, params.number || params.limit || 1).map(async (item, i) => {
+      const imagePromises = data.slice(0, params.number || params.limit || 1).map(async (item, i) => {
         const imageUrl = item.image || item;
         if (!fetchedImageUrls.includes(imageUrl)) {
           fetchedImageUrls.push(imageUrl);
@@ -47,7 +45,8 @@ const fetchImages = async (url, params, fetchedImageUrls) => {
         } else {
           return null;
         }
-      }));
+      });
+      return await Promise.all(imagePromises);
     } else {
       return [];
     }
@@ -108,31 +107,31 @@ module.exports = {
       let numberSearch = parseInt(keySearch.split("-").pop().trim()) || 1;
       numberSearch = Math.min(Math.max(numberSearch, 1), 15); // Ensure the range is between 1 and 15
 
-      let imgData = [];
       let fetchedImageUrls = [];
 
-      // Iterate through API services to fetch images sequentially
-      for (let i = 0; i < services.length; i++) {
-        const service = services[i];
-        try {
-          const url = typeof service === 'function' ? await service() : service;
-          const params = getApiParams(url, keySearchs, numberSearch);
-          imgData = await fetchImages(url, params, fetchedImageUrls);
-          if (imgData.length > 0) {
-            break; // Exit loop if images are fetched successfully
-          }
-        } catch (error) {
-          console.error(`Error fetching images from API ${i + 1}:`, error);
-        }
-      }
+      // Create a list of promises for all API calls
+      const apiPromises = services.map(async (service) => {
+        const url = typeof service === 'function' ? await service() : service;
+        const params = getApiParams(url, keySearchs, numberSearch);
+        return fetchImages(url, params, fetchedImageUrls);
+      });
 
-      if (!imgData || imgData.length === 0) {
+      // Wait for all promises to settle
+      const results = await Promise.allSettled(apiPromises);
+
+      // Filter out the fulfilled promises and get the first one with images
+      const successfulResults = results
+        .filter(result => result.status === 'fulfilled' && result.value.length > 0)
+        .map(result => result.value)
+        .flat();
+
+      if (!successfulResults || successfulResults.length === 0) {
         throw new Error("No images found.");
       }
 
       await api.sendMessage({
-        attachment: imgData.filter(img => img !== null),
-        body: `Here are the top ${imgData.length} image results for "${keySearchs}":`
+        attachment: successfulResults.filter(img => img !== null),
+        body: `Here are the top ${successfulResults.length} image results for "${keySearchs}":`
       }, event.threadID, event.messageID);
 
     } catch (error) {
