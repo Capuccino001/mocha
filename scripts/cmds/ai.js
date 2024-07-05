@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-const forbiddenKeywords = ["-unsend", "-remini", "-removebg","uid"];
+const forbiddenKeywords = ["-unsend", "-remini", "-removebg","-uid"];
 const services = [
     { url: 'http://markdevs-last-api.onrender.com/api/v2/gpt4', param: 'query' },
     { url: 'https://markdevs-last-api.onrender.com/api/v3/gpt4', param: 'ask' },
