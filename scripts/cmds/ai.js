@@ -1,7 +1,18 @@
 const axios = require('axios');
 
 const forbiddenKeywords = ["-unsend", "-remini", "-removebg","-uid"];
-const services = [    { url: 'http://markdevs-last-api.onrender.com/api/v2/gpt4', param: 'query' },    { url: 'https://markdevs-last-api.onrender.com/api/v3/gpt4', param: 'ask' },    { url: 'https://openaikey-x20f.onrender.com/api', param: 'prompt' },    { url: 'http://nash-rest-api.replit.app/gpt4', param: 'query' },    { url: 'https://samirxpikachu.onrender.com/gpt', param: 'prompt' },    { url: 'http://jonellccprojectapis10.adaptable.app/api/chatgpt', param: 'input' },    { url: 'https://openapi-idk8.onrender.com/bing-balanced', param: 'query' },    { url: 'https://openapi-idk8.onrender.com/chatter', param: 'query' }];
+const services = [
+    
+{ url: 'http://markdevs-last-api.onrender.com/api/v2/gpt4', param: 'query' },    
+{ url: 'https://markdevs-last-api.onrender.com/api/v3/gpt4', param: 'ask' },    
+{ url: 'https://openaikey-x20f.onrender.com/api', param: 'prompt' },    
+{ url: 'http://nash-rest-api.replit.app/gpt4', param: 'query' },    
+{ url: 'https://samirxpikachu.onrender.com/gpt', param: 'prompt' },    
+{ url: 'http://jonellccprojectapis10.adaptable.app/api/chatgpt', param: 'input' },    
+{ url: 'https://openapi-idk8.onrender.com/bing-balanced', param: 'query' },    
+{ url: 'https://openapi-idk8.onrender.com/chatter', param: 'query' }
+
+];
 
 const getAIResponse = async (question, messageID) => {
     const response = await getAnswerFromAI(question.trim() || "hi");
