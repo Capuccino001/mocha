@@ -4,11 +4,11 @@ const fs = require("fs");
 const cookie = 'g.a000jAgkbuC3Z3pwjOu4YulB7kwqlmePsX2TCiqf68yHVd_PFrwT1JPNVjFsZInzfeSKnB99wwACgYKAVkSAQASFQHGX2Mi8IyCIo3a3I3NeBq9M5MxwhoVAUF8yKoNuSl2K2-sLRtC4vn2mpBr0076';
 
 const services = [
-  { url: 'https://gemini-ai-pearl-two.vercel.app/kshitiz', params: (prompt, uid) => ({ prompt, uid, apikey: 'kshitiz' }) },
-  { url: 'https://samirxpikachu.onrender.com/gemini', params: (prompt, uid) => ({ text: prompt, uid }) },
-  { url: 'http://zcdsphapilist.replit.app/gemini', params: (prompt) => ({ prompt }) },
-  { url: 'http://nash-rest-api.replit.app/gemini', params: (prompt) => ({ prompt }) },
-  { url: 'https://api.onlytris.space/gemini-pro', params: (prompt) => ({ question: prompt }) }
+  { url: 'https://gemini-ai-pearl-two.vercel.app/kshitiz', param: 'prompt', uid: true, apikey: 'kshitiz' },
+  { url: 'https://samirxpikachu.onrender.com/gemini', param: 'text', uid: true },
+  { url: 'http://nash-rest-api.replit.app/gemini', param: 'prompt', uid: false },
+  { url: 'https://api.onlytris.space/gemini-pro', param: 'question', uid: false },
+  { url: 'https://gemini-23xn.onrender.com/api/gemini', param: 'message', uid: false }
 ];
 
 module.exports = {
@@ -101,7 +101,11 @@ async function fallbackGeminiService(event, prompt, message, commandName) {
   const senderID = event.senderID;
   for (const service of services) {
     try {
-      const response = await axios.get(service.url, { params: service.params(prompt, senderID) });
+      const params = { [service.param]: prompt };
+      if (service.uid) params.uid = senderID;
+      if (service.apikey) params.apikey = service.apikey;
+      
+      const response = await axios.get(service.url, { params });
       const answer = response.data.answer || response.data;
       message.reply(formatMessage(answer), (err, info) => {
         if (!err) {
