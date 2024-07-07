@@ -19,7 +19,7 @@ module.exports = {
             welcomeMessage: "Thank you for inviting me to the group!\nBot prefix: %1\nTo view the list of commands, please enter: %1help",
             multiple1: "you",
             multiple2: "you guys",
-            defaultWelcomeMessage: `⊂⁠(⁠´⁠･⁠◡⁠･⁠⊂⁠ ⁠) Hello and welcome\n{userName}!\nWe're thrilled to have you here in {boxName}.\n\nFeel free to chat and/or use the bot when you're bored.\nEnjoy your stay! Have a nice {session}!\n\n𝚁𝚞𝚕𝚎𝚜 𝚝𝚘 𝚏𝚘𝚕𝚕𝚘𝚠 𝚍𝚞𝚛𝚒𝚗𝚐 𝚢𝚘𝚞𝚛 𝚜𝚝𝚊𝚢:\n- No adult content (18+).\n- No spamming.\n- No changing the group\n(theme/emoji/name).\n\n Chat -𝚑𝚎𝚕𝚙 to see all commands.\n\n𝙼𝚎𝚗𝚝𝚒𝚘𝚗 𝚖𝚎 𝚒𝚏 𝚜𝚘𝚖𝚎𝚘𝚗𝚎 𝚋𝚛𝚘𝚔𝚎 𝚝𝚑𝚎 𝚛𝚞𝚕𝚎𝚜 𝚘𝚛 𝚒𝚏 𝚝𝚑𝚎 𝚋𝚘𝚝 𝚍𝚒𝚎𝚜: Mark John Sombra (owner).`
+            defaultWelcomeMessage: `⊂⁠(⁠´⁠･⁠◡⁠･⁠⊂⁠ ⁠) Hello and welcome\n{userName}!\nWe're thrilled to have you here in {boxName}.\n\nFeel free to chat and/or use the bot when you're bored.\nEnjoy your stay! Have a nice {session}!\n\n𝚁𝚞𝚕𝚎𝚜 𝚝𝚘 𝚏𝚘𝚕𝚕𝚘𝚠 𝚍𝚞𝚛𝚒𝚗𝚐 𝚢𝚘𝚞𝚛 𝚜𝚝𝚊𝚢:\n▫No adult content (18+).\n▫No spamming (auto-kick).\n▫No changing the group\n(theme/emoji/name).\n\n Chat -𝚑𝚎𝚕𝚙 to see all commands.\n\n𝙼𝚎𝚗𝚝𝚒𝚘𝚗 𝚖𝚎 𝚒𝚏 𝚜𝚘𝚖𝚎𝚘𝚗𝚎 𝚋𝚛𝚘𝚔𝚎 𝚝𝚑𝚎 𝚛𝚞𝚕𝚎𝚜 𝚘𝚛 𝚒𝚏 𝚝𝚑𝚎 𝚋𝚘𝚝 𝚍𝚒𝚎𝚜: Mark John Sombra (owner).`
         }
     },
 
