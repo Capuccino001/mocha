@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-const forbiddenKeywords = ["-unsend", "-remini", "-removebg", "-uid"];
+const forbiddenKeywords = ["-unsend", "-remini", "-removebg", "-uid","-trans","-translate"];
 const services = [
     { url: 'https://openaikey-x20f.onrender.com/api', param: 'prompt' },
     { url: 'http://nash-rest-api.replit.app/gpt4', param: 'query' },
