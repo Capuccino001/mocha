@@ -14,7 +14,7 @@ module.exports = {
   config: {
     name: "animagine",
     aliases: [],
-    author: "Vex_Kshitiz",
+    author: "Vex_Kshitiz/coffee",
     version: "2.0",
     cooldowns: 20,
     role: 0,
