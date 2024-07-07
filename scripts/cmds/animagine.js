@@ -1,19 +1,19 @@
-const fs = require("fs");
-const path = require("path");
-const axios = require("axios");
+const axios = require('axios');
+const fs = require('fs');
+const path = require('path');
 
-// List of image generation services
 const imageGenerationServices = [
     { url: 'https://markdevs-last-api.onrender.com/emi', param: 'prompt' },
     { url: 'https://emi-gen-j0rj.onrender.com/emi', param: 'prompt' },
-    { url: 'https://samirxpikachu.onrender.com/animagine', param: 'prompt' }
+    { url: 'https://samirxpikachu.onrender.com/animagine', param: 'prompt' },
+    { url: 'https://samirxpikachu.onrender.com/mageV2', param: 'prompt' }
 ];
 
 module.exports = {
   config: {
     name: "animagine",
     aliases: [],
-    author: "coffee",
+    author: "Vex_Kshitiz",
     version: "2.0",
     cooldowns: 20,
     role: 0,
@@ -32,16 +32,10 @@ module.exports = {
           [service.param]: prompt
         };
 
-        // Determine if the service has additional parameters (resolution, model, quality tag)
-        if (imageUrl === 'https://samirxpikachu.onrender.com/animagine') {
-          // Add resolution parameter
-          queryParams.resolution = "1:1"; // Default resolution, can be adjusted based on API's default behavior
-
-          // Add model parameter
-          queryParams.model = ""; // Empty model parameter, letting the service choose
-
-          // Add quality tag parameter
-          queryParams.qualitytag = "4"; // Default quality tag, can be adjusted based on API's default behavior
+        if (imageUrl === 'https://samirxpikachu.onrender.com/mageV2') {
+          queryParams.aspect_ratio = "1:1";
+          queryParams.style = Math.floor(Math.random() * 5) + 1;
+          queryParams.presets = Math.floor(Math.random() * 5) + 1;
         }
 
         const response = await axios.get(imageUrl, {
@@ -49,12 +43,16 @@ module.exports = {
           responseType: "arraybuffer",
         });
 
+        if (response.status !== 200) {
+          throw new Error(`Failed to fetch image from ${imageUrl}. Status: ${response.status}`);
+        }
+
         await sendImageResponse(message, response.data);
       }
 
     } catch (error) {
       console.error("Error:", error);
-      message.reply("❌ | An error occurred. Please try again later.");
+      await message.reply("❌ | Can't generate images from the provided APIs. Please try again later.");
     }
   }
 };
@@ -77,7 +75,6 @@ async function sendImageResponse(message, imageData) {
       console.error("Error sending message:", err);
     } else {
       console.log("Image sent successfully");
-      // Delete the image after it has been sent
       fs.unlinkSync(imagePath);
     }
   });
