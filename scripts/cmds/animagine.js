@@ -6,14 +6,15 @@ const imageGenerationServices = [
     { url: 'https://markdevs-last-api.onrender.com/emi', param: 'prompt' },
     { url: 'https://emi-gen-j0rj.onrender.com/emi', param: 'prompt' },
     { url: 'https://samirxpikachu.onrender.com/animagine', param: 'prompt' },
-    { url: 'https://samirxpikachu.onrender.com/mageV2', param: 'prompt' }
+    { url: 'https://samirxpikachu.onrender.com/mageV2', param: 'prompt' },
+    { url: 'https://samirxpikachu.onrender.com/mageDef', param: 'prompt' } // New service added
 ];
 
 module.exports = {
   config: {
     name: "animagine",
     aliases: [],
-    author: "Vex_Kshitiz/coffee",
+    author: "Vex_Kshitiz",
     version: "2.0",
     cooldowns: 20,
     role: 0,
@@ -32,6 +33,7 @@ module.exports = {
           [service.param]: prompt
         };
 
+        // Adjust parameters for specific services if needed
         if (imageUrl === 'https://samirxpikachu.onrender.com/mageV2') {
           queryParams.aspect_ratio = "1:1";
           queryParams.style = Math.floor(Math.random() * 5) + 1;
