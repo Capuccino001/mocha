@@ -21,7 +21,7 @@ module.exports = {
     category: "fun",
   },
   onStart: async function ({ message, args, api, event }) {
-    api.setMessageReaction("🖼️", event.messageID, (err) => {}, true);
+    api.setMessageReaction("✍️", event.messageID, (err) => {}, true);
     try {
       const prompt = args.join(" ");
 
