@@ -1,6 +1,5 @@
 const axios = require('axios');
 
-const forbiddenKeywords = ["-unsend", "-remini", "-removebg", "-uid","-trans","-translate"];
 const services = [
     { url: 'https://openaikey-x20f.onrender.com/api', param: 'prompt' },
     { url: 'http://nash-rest-api.replit.app/gpt4', param: 'query' },
@@ -10,17 +9,26 @@ const services = [
     { url: 'https://openapi-idk8.onrender.com/chatter', param: 'query' }
 ];
 
+const designatedHeader = "🧋✨ | 𝙼𝚘𝚌𝚑𝚊 𝙰𝚒";
+
 const getAIResponse = async (question, messageID) => {
     const response = await getAnswerFromAI(question.trim() || "hi");
     return { response, messageID };
 };
 
 const getAnswerFromAI = async (question) => {
-    for (const { url, param } of services) {
+    const promises = services.map(({ url, param }) => {
         const params = { [param]: question };
-        const response = await fetchFromAI(url, params);
-        if (response) return response;
+        return fetchFromAI(url, params);
+    });
+
+    const responses = await Promise.allSettled(promises);
+    for (const { status, value } of responses) {
+        if (status === 'fulfilled' && value) {
+            return value;
+        }
     }
+
     throw new Error("No valid response from any AI service");
 };
 
@@ -59,10 +67,15 @@ const onStart = async ({ api, event, args }) => {
 
 const onChat = async ({ event, api }) => {
     const messageContent = event.body.trim().toLowerCase();
-    if (forbiddenKeywords.some(keyword => messageContent.includes(keyword))) return;
-
     const isReplyToBot = event.messageReply && event.messageReply.senderID === api.getCurrentUserID();
     const isDirectMessage = messageContent.startsWith("ai") && event.senderID !== api.getCurrentUserID();
+
+    if (isReplyToBot) {
+        const repliedMessage = event.messageReply.body || "";
+        if (!repliedMessage.startsWith(designatedHeader)) {
+            return;
+        }
+    }
 
     if (isReplyToBot || isDirectMessage) {
         const userMessage = isDirectMessage ? messageContent.replace(/^ai\s*/, "").trim() : messageContent;
