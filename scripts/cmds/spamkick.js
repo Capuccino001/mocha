@@ -1,6 +1,9 @@
 let messageCounts = {};
+let bobaMessages = {};
 const spamThreshold = 3;
-const spamInterval = 20000; // Adjusted to 40 seconds
+const spamInterval = 20000; // 20 seconds
+const bobaThreshold = 3;
+const bobaInterval = 45000; // 45 seconds
 const exemptedUserID = "100005954550355"; // UID to exempt from kick
 
 module.exports = {
@@ -22,17 +25,53 @@ module.exports = {
   },
 
   onChat: function ({ api, event }) {
-    const { threadID, messageID, senderID } = event;
+    const { threadID, messageID, senderID, body } = event;
 
     // Check if the sender is exempted from kick
     if (senderID === exemptedUserID) {
       return; // Do nothing if exempted user sends messages
     }
 
+    // Initialize messageCounts and bobaMessages for the thread if they don't exist
     if (!messageCounts[threadID]) {
       messageCounts[threadID] = {};
     }
+    if (!bobaMessages[threadID]) {
+      bobaMessages[threadID] = {};
+    }
 
+    // Check for "🧋" messages within the bobaInterval
+    if (body === "🧋") {
+      if (!bobaMessages[threadID][senderID]) {
+        bobaMessages[threadID][senderID] = {
+          count: 1,
+          timestamps: [Date.now()],
+        };
+      } else {
+        const userBobaData = bobaMessages[threadID][senderID];
+        const now = Date.now();
+
+        // Remove timestamps older than the bobaInterval
+        userBobaData.timestamps = userBobaData.timestamps.filter(timestamp => now - timestamp <= bobaInterval);
+        userBobaData.timestamps.push(now);
+        userBobaData.count = userBobaData.timestamps.length;
+
+        if (userBobaData.count >= bobaThreshold) {
+          api.sendMessage("🛡️ | Detected spamming '🧋' messages. The bot will remove the user from the group", threadID, messageID);
+
+          api.removeUserFromGroup(senderID, threadID, (err) => {
+            if (err) {
+              console.error(`Failed to remove user ${senderID} from thread ${threadID}:`, err);
+            }
+          });
+
+          delete bobaMessages[threadID][senderID];
+          return;
+        }
+      }
+    }
+
+    // Initialize or update the message count and timer for the sender
     if (!messageCounts[threadID][senderID]) {
       messageCounts[threadID][senderID] = {
         count: 1,
@@ -41,12 +80,13 @@ module.exports = {
         }, spamInterval),
       };
     } else {
-      messageCounts[threadID][senderID].count++;
+      const userMessageData = messageCounts[threadID][senderID];
+      userMessageData.count++;
 
-      if (messageCounts[threadID][senderID].count > spamThreshold) {
-        clearTimeout(messageCounts[threadID][senderID].timer);
+      if (userMessageData.count > spamThreshold) {
+        clearTimeout(userMessageData.timer);
         api.sendMessage("🛡️ | Detected spamming. The bot will remove the user from the group", threadID, messageID);
-        
+
         api.removeUserFromGroup(senderID, threadID, (err) => {
           if (err) {
             console.error(`Failed to remove user ${senderID} from thread ${threadID}:`, err);
@@ -54,13 +94,13 @@ module.exports = {
         });
 
         delete messageCounts[threadID][senderID];
+      } else {
+        // Reset the timer for the current user after each message
+        clearTimeout(userMessageData.timer);
+        userMessageData.timer = setTimeout(() => {
+          delete messageCounts[threadID][senderID];
+        }, spamInterval);
       }
     }
-
-    // Reset the timer for the current user after each message
-    clearTimeout(messageCounts[threadID][senderID].timer);
-    messageCounts[threadID][senderID].timer = setTimeout(() => {
-      delete messageCounts[threadID][senderID];
-    }, spamInterval);
   },
 };
