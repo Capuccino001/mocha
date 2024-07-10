@@ -1,4 +1,8 @@
 const axios = require('axios');
+const NodeCache = require('node-cache');
+
+// Initialize cache
+const cache = new NodeCache({ stdTTL: 600, checkperiod: 120 });
 
 const services = [
     { url: 'https://openaikey-x20f.onrender.com/api', param: 'prompt' },
@@ -12,7 +16,15 @@ const services = [
 const designatedHeader = "🧋✨ | 𝙼𝚘𝚌𝚑𝚊 𝙰𝚒";
 
 const getAIResponse = async (question, messageID) => {
+    // Check if response is cached
+    const cachedResponse = cache.get(question);
+    if (cachedResponse) {
+        return { response: cachedResponse, messageID };
+    }
+
     const response = await getAnswerFromAI(question.trim() || "hi");
+    // Cache the response
+    cache.set(question, response);
     return { response, messageID };
 };
 
