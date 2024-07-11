@@ -3,7 +3,7 @@ const { getStreamFromURL, uploadImgbb } = global.utils;
 module.exports = {
     config: {
         name: "antichangeinfobox",
-        version: "2.0",
+        version: "2.2",
         author: "NTKhang",
         countDown: 5,
         role: 0,
@@ -29,20 +29,27 @@ module.exports = {
         }
     },
 
-    onStart: async function ({ message, event, args, threadsData, getLang }) {
+    onStart: async function ({ event, threadsData }) {
         const { threadID } = event;
         const dataAntiChangeInfoBox = await threadsData.get(threadID, "data.antiChangeInfoBox", {});
-        
-        const imageSrc = await uploadImgbb((await threadsData.get(threadID)).imageSrc);
-        dataAntiChangeInfoBox.avatar = imageSrc ? imageSrc.image.url : "REMOVE";
-        
-        dataAntiChangeInfoBox.name = (await threadsData.get(threadID)).threadName;
-        dataAntiChangeInfoBox.nickname = (await threadsData.get(threadID)).members.reduce((acc, user) => {
+
+        const threadData = await threadsData.get(threadID);
+        const imageSrc = threadData.imageSrc;
+
+        if (imageSrc) {
+            const newImageSrc = await uploadImgbb(imageSrc);
+            dataAntiChangeInfoBox.avatar = newImageSrc.image.url;
+        } else {
+            dataAntiChangeInfoBox.avatar = "REMOVE";
+        }
+
+        dataAntiChangeInfoBox.name = threadData.threadName;
+        dataAntiChangeInfoBox.nickname = threadData.members.reduce((acc, user) => {
             acc[user.userID] = user.nickname;
             return acc;
         }, {});
-        dataAntiChangeInfoBox.theme = (await threadsData.get(threadID)).threadThemeID;
-        dataAntiChangeInfoBox.emoji = (await threadsData.get(threadID)).emoji;
+        dataAntiChangeInfoBox.theme = threadData.threadThemeID;
+        dataAntiChangeInfoBox.emoji = threadData.emoji;
 
         await threadsData.set(threadID, dataAntiChangeInfoBox, "data.antiChangeInfoBox");
     },
@@ -60,8 +67,13 @@ module.exports = {
                 } else {
                     message.reply(getLang("antiChangeAvatarAlreadyOnButMissingAvt"));
                 }
-            } else {
-                const newImageSrc = await uploadImgbb(logMessageData.url);
+            } else if (role >= 1 || currentUserID === author) {
+                const imageSrc = logMessageData.url;
+                if (!imageSrc) {
+                    return await threadsData.set(threadID, "REMOVE", "data.antiChangeInfoBox.avatar");
+                }
+
+                const newImageSrc = await uploadImgbb(imageSrc);
                 await threadsData.set(threadID, newImageSrc.image.url, "data.antiChangeInfoBox.avatar");
             }
         }
@@ -76,11 +88,18 @@ module.exports = {
         }
 
         async function handleNicknameChange() {
-            if (role < 1 && currentUserID !== author) {
-                message.reply(getLang("antiChangeNicknameAlreadyOn"));
-                api.changeNickname(dataAntiChange.nickname[logMessageData.participant_id], threadID, logMessageData.participant_id);
+            const { participant_id } = logMessageData;
+
+            // Check if the nickname change is for the bot
+            if (currentUserID === participant_id) {
+                if (role < 1 && currentUserID !== author) {
+                    message.reply(getLang("antiChangeNicknameAlreadyOn"));
+                    api.changeNickname(dataAntiChange.nickname[participant_id], threadID, participant_id);
+                } else {
+                    await threadsData.set(threadID, logMessageData.nickname, `data.antiChangeInfoBox.nickname.${participant_id}`);
+                }
             } else {
-                await threadsData.set(threadID, logMessageData.nickname, `data.antiChangeInfoBox.nickname.${logMessageData.participant_id}`);
+                await threadsData.set(threadID, logMessageData.nickname, `data.antiChangeInfoBox.nickname.${participant_id}`);
             }
         }
 
