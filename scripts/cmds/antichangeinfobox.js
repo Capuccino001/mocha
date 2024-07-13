@@ -59,7 +59,7 @@ module.exports = {
         // Helper function to handle unauthorized changes
         async function handleUnauthorizedChange(type, originalValue, revertFunction) {
             if (role < 1 && api.getCurrentUserID() !== author) {
-                api.sendMessage("🛡️ | Phát hiện sự thay đổi trái phép. Bot sẽ loại bỏ người dùng khỏi nhóm", threadID);
+                api.sendMessage("🛡️ | Unauthorized change detected. The bot will remove the user from the group.", threadID);
                 api.removeUserFromGroup(author, threadID);
                 if (originalValue) {
                     revertFunction(originalValue);
