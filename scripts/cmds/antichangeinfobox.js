@@ -6,55 +6,70 @@ module.exports = {
         version: "1.0",
         author: "NTKhang",
         description: {
-            en: "Automatically reverts thread properties (name, nickname, theme, emoji) on unauthorized changes.",
-            vi: "Tự động khôi phục các thuộc tính của nhóm (tên, biệt danh, chủ đề, biểu tượng cảm xúc) khi phát hiện thay đổi trái phép."
+            en: "Automatically reverts thread properties (name, nickname, theme, emoji) on unauthorized changes and kicks out the user.",
+            vi: "Tự động khôi phục các thuộc tính của nhóm (tên, biệt danh, chủ đề, biểu tượng cảm xúc) khi phát hiện thay đổi trái phép và đuổi thành viên ra khỏi nhóm."
         },
         category: "utility"
     },
 
-    onStart: async function ({ api, event, threadsData }) {
-        const { threadID } = event;
-
-        async function checkAndSaveData(key, data) {
-            const dataAntiChangeInfoBox = await threadsData.get(threadID, "data.antiChangeInfoBox", {});
-            dataAntiChangeInfoBox[key] = data;
-            await threadsData.set(threadID, dataAntiChangeInfoBox, "data.antiChangeInfoBox");
-        }
-
-        const threadInfo = await api.getThreadInfo(threadID);
-
+    onStart: async function ({ api, event, threadsData, isRestart }) {
         try {
-            // Check and store initial avatar
-            if (threadInfo.imageSrc) {
-                const newImageSrc = await uploadImgbb(threadInfo.imageSrc);
-                await checkAndSaveData("avatar", newImageSrc.image.url);
-            }
+            if (isRestart) {
+                // Bot has restarted
+                const threadList = await api.getThreadList(100, null, ["INBOX"]);
 
-            // Check and store initial thread name
-            if (threadInfo.threadName) {
-                await checkAndSaveData("name", threadInfo.threadName);
-            }
+                for (const thread of threadList) {
+                    const { threadID } = thread;
+                    const threadInfo = await api.getThreadInfo(threadID);
+                    const dataAntiChangeInfoBox = {
+                        avatar: threadInfo.imageSrc || null,
+                        name: threadInfo.threadName || null,
+                        nickname: {},
+                        theme: threadInfo.color || null,
+                        emoji: threadInfo.emoji || null
+                    };
 
-            // Check and store initial nicknames
-            if (threadInfo.nicknames) {
-                const nicknames = threadInfo.nicknames.reduce((obj, { participant_id, nickname }) => {
-                    obj[participant_id] = nickname;
-                    return obj;
-                }, {});
-                await checkAndSaveData("nickname", nicknames);
-            }
+                    if (threadInfo.nicknames) {
+                        threadInfo.nicknames.forEach(({ participant_id, nickname }) => {
+                            dataAntiChangeInfoBox.nickname[participant_id] = nickname;
+                        });
+                    }
 
-            // Check and store initial theme color
-            if (threadInfo.color) {
-                await checkAndSaveData("theme", threadInfo.color);
-            }
+                    await threadsData.set(threadID, dataAntiChangeInfoBox, "data.antiChangeInfoBox");
+                }
 
-            // Check and store initial thread emoji
-            if (threadInfo.emoji) {
-                await checkAndSaveData("emoji", threadInfo.emoji);
+                console.log("Thread properties saved successfully after bot restart.");
+            } else {
+                // Bot is starting for the first time
+                console.log("Bot started for the first time. Initializing thread properties.");
+
+                // Fetch initial thread properties and save them
+                const threadList = await api.getThreadList(100, null, ["INBOX"]);
+
+                for (const thread of threadList) {
+                    const { threadID } = thread;
+                    const threadInfo = await api.getThreadInfo(threadID);
+                    const dataAntiChangeInfoBox = {
+                        avatar: threadInfo.imageSrc || null,
+                        name: threadInfo.threadName || null,
+                        nickname: {},
+                        theme: threadInfo.color || null,
+                        emoji: threadInfo.emoji || null
+                    };
+
+                    if (threadInfo.nicknames) {
+                        threadInfo.nicknames.forEach(({ participant_id, nickname }) => {
+                            dataAntiChangeInfoBox.nickname[participant_id] = nickname;
+                        });
+                    }
+
+                    await threadsData.set(threadID, dataAntiChangeInfoBox, "data.antiChangeInfoBox");
+                }
+
+                console.log("Thread properties initialized successfully.");
             }
         } catch (error) {
-            console.error("Error saving thread properties: ", error);
+            console.error("Error handling bot start/restart and saving thread properties: ", error);
         }
     },
 
@@ -63,8 +78,10 @@ module.exports = {
         const dataAntiChange = await threadsData.get(threadID, "data.antiChangeInfoBox", {});
 
         if (role < 1 && api.getCurrentUserID() !== author) {
+            // Unauthorized change detected
             api.sendMessage("🛡️ | Unauthorized change detected. The bot will remove the user from the group.", threadID);
-            api.removeUserFromGroup(author, threadID);
+            api.removeUserFromGroup(author, threadID); // Kick the user out of the group
+            return; // Exit function to prevent further processing of the unauthorized change
         }
 
         switch (logMessageType) {
