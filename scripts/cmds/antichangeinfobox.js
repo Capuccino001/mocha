@@ -4,7 +4,7 @@ module.exports = {
     config: {
         name: "antichangeinfobox",
         version: "1.0",
-        author: "NTKhang",
+        author: "coffee",
         description: {
             en: "Automatically kicks out the user if unauthorized changes are detected in thread properties (name, avatar, theme, emoji).",
         },
