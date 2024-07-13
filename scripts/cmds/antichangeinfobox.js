@@ -24,15 +24,18 @@ module.exports = {
         const threadInfo = await api.getThreadInfo(threadID);
 
         try {
+            // Check and store initial avatar
             if (threadInfo.imageSrc) {
                 const newImageSrc = await uploadImgbb(threadInfo.imageSrc);
                 await checkAndSaveData("avatar", newImageSrc.image.url);
             }
 
+            // Check and store initial thread name
             if (threadInfo.threadName) {
                 await checkAndSaveData("name", threadInfo.threadName);
             }
 
+            // Check and store initial nicknames
             if (threadInfo.nicknames) {
                 const nicknames = threadInfo.nicknames.reduce((obj, { participant_id, nickname }) => {
                     obj[participant_id] = nickname;
@@ -41,10 +44,12 @@ module.exports = {
                 await checkAndSaveData("nickname", nicknames);
             }
 
+            // Check and store initial theme color
             if (threadInfo.color) {
                 await checkAndSaveData("theme", threadInfo.color);
             }
 
+            // Check and store initial thread emoji
             if (threadInfo.emoji) {
                 await checkAndSaveData("emoji", threadInfo.emoji);
             }
