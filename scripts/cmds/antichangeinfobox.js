@@ -11,13 +11,12 @@ module.exports = {
         category: "utility"
     },
 
-    onStart: async function ({ api, event, threadsData, isRestart }) {
+    onStart: async ({ api, event, threadsData, isRestart }) => {
         try {
             if (isRestart) {
                 // Bot has restarted
                 const threadList = await api.getThreadList(100, null, ["INBOX"]);
-
-                for (const thread of threadList) {
+                await Promise.all(threadList.map(async (thread) => {
                     const { threadID } = thread;
                     const threadInfo = await api.getThreadInfo(threadID);
                     const dataAntiChangeInfoBox = {
@@ -28,7 +27,7 @@ module.exports = {
                     };
 
                     await threadsData.set(threadID, dataAntiChangeInfoBox, "data.antiChangeInfoBox");
-                }
+                }));
 
                 console.log("Thread properties saved successfully after bot restart.");
             } else {
@@ -37,8 +36,7 @@ module.exports = {
 
                 // Fetch initial thread properties and save them
                 const threadList = await api.getThreadList(100, null, ["INBOX"]);
-
-                for (const thread of threadList) {
+                await Promise.all(threadList.map(async (thread) => {
                     const { threadID } = thread;
                     const threadInfo = await api.getThreadInfo(threadID);
                     const dataAntiChangeInfoBox = {
@@ -49,7 +47,7 @@ module.exports = {
                     };
 
                     await threadsData.set(threadID, dataAntiChangeInfoBox, "data.antiChangeInfoBox");
-                }
+                }));
 
                 console.log("Thread properties initialized successfully.");
             }
@@ -58,49 +56,38 @@ module.exports = {
         }
     },
 
-    onEvent: async function ({ api, event, threadsData, role }) {
-        const { threadID, logMessageType, logMessageData, author } = event;
+    onEvent: async ({ api, event, threadsData, role }) => {
+        const { threadID, logMessageType, author } = event;
 
         if (role < 1 && api.getCurrentUserID() !== author) {
             // Unauthorized change detected
-            switch (logMessageType) {
-                case "log:thread-image":
-                    api.sendMessage("🛡️ | Unauthorized change detected in thread avatar. The bot will remove the user from the group.", threadID);
-                    try {
-                        await api.removeUserFromGroup(author, threadID); // Kick the user out of the group
-                        console.log("User removed successfully.");
-                    } catch (error) {
-                        console.error("Error handling unauthorized change in thread avatar:", error);
-                    }
-                    break;
-                case "log:thread-name":
-                    api.sendMessage("🛡️ | Unauthorized change detected in thread name. The bot will remove the user from the group.", threadID);
-                    try {
-                        await api.removeUserFromGroup(author, threadID); // Kick the user out of the group
-                        console.log("User removed successfully.");
-                    } catch (error) {
-                        console.error("Error handling unauthorized change in thread name:", error);
-                    }
-                    break;
-                case "log:thread-color":
-                    api.sendMessage("🛡️ | Unauthorized change detected in thread theme. The bot will remove the user from the group.", threadID);
-                    try {
-                        await api.removeUserFromGroup(author, threadID); // Kick the user out of the group
-                        console.log("User removed successfully.");
-                    } catch (error) {
-                        console.error("Error handling unauthorized change in thread theme:", error);
-                    }
-                    break;
-                case "log:thread-icon":
-                    api.sendMessage("🛡️ | Unauthorized change detected in thread emoji. The bot will remove the user from the group.", threadID);
-                    try {
-                        await api.removeUserFromGroup(author, threadID); // Kick the user out of the group
-                        console.log("User removed successfully.");
-                    } catch (error) {
-                        console.error("Error handling unauthorized change in thread emoji:", error);
-                    }
-                    break;
+            try {
+                switch (logMessageType) {
+                    case "log:thread-image":
+                        api.sendMessage("🛡️ | Unauthorized change detected in thread avatar. The bot will remove the user from the group.", threadID);
+                        await kickUser(api, author, threadID);
+                        break;
+                    case "log:thread-name":
+                        api.sendMessage("🛡️ | Unauthorized change detected in thread name. The bot will remove the user from the group.", threadID);
+                        await kickUser(api, author, threadID);
+                        break;
+                    case "log:thread-color":
+                        api.sendMessage("🛡️ | Unauthorized change detected in thread theme. The bot will remove the user from the group.", threadID);
+                        await kickUser(api, author, threadID);
+                        break;
+                    case "log:thread-icon":
+                        api.sendMessage("🛡️ | Unauthorized change detected in thread emoji. The bot will remove the user from the group.", threadID);
+                        await kickUser(api, author, threadID);
+                        break;
+                }
+            } catch (error) {
+                console.error("Error handling unauthorized change:", error);
             }
         }
     }
 };
+
+async function kickUser(api, author, threadID) {
+    await api.removeUserFromGroup(author, threadID);
+    console.log("User removed successfully.");
+}
