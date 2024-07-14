@@ -5,15 +5,18 @@ const NodeCache = require('node-cache');
 const cache = new NodeCache({ stdTTL: 600, checkperiod: 120 });
 
 const services = [
-    { url: 'https://openaikey-x20f.onrender.com/api', param: 'prompt' },
+    { url: 'http://joshweb.click/api/gpt-4o', param: 'q', uidParam: 'uid' },
+    { url: 'http://markdevs-last-api.onrender.com/api/v2/gpt4', param: 'query' },
+    { url: 'https://markdevs-last-api.onrender.com/api/v3/gpt4', param: 'ask' },
+    { url: 'https://markdevs-last-api.onrender.com/gpt4', param: 'prompt' },
     { url: 'http://nash-rest-api.replit.app/gpt4', param: 'query' },
+    { url: 'https://openaikey-x20f.onrender.com/api', param: 'prompt' },
     { url: 'https://samirxpikachu.onrender.com/gpt', param: 'prompt' },
     { url: 'http://jonellccprojectapis10.adaptable.app/api/chatgpt', param: 'input' },
     { url: 'https://openapi-idk8.onrender.com/bing-balanced', param: 'query' },
     { url: 'https://openapi-idk8.onrender.com/chatter', param: 'query' },
-    { url: 'http://markdevs-last-api.onrender.com/api/v2/gpt4', param: 'query' },
-    { url: 'https://markdevs-last-api.onrender.com/api/v3/gpt4', param: 'ask' },
-    { url: 'https://markdevs-last-api.onrender.com/gpt4', param: 'prompt' }
+    { url: 'https://hiroshi-rest-api.replit.app/ai/turbo', param: 'ask' },
+    { url: 'https://my-api-v1.onrender.com/api/v2/gpt4', param: 'query' }  // New service added
 ];
 
 const designatedHeader = "🧋✨ | 𝙼𝚘𝚌𝚑𝚊 𝙰𝚒";
@@ -25,7 +28,7 @@ const getAIResponse = async (question, messageID) => {
     }
 
     try {
-        const { response, service } = await tryAllServices(question);
+        const { response } = await tryAllServices(question);
         if (response) {
             cache.set(question, response);
             return { response, messageID };
@@ -39,16 +42,22 @@ const getAIResponse = async (question, messageID) => {
 };
 
 const tryAllServices = async (question) => {
-    const promises = services.map(({ url, param }) => fetchFromAI(url, { [param]: question }));
+    const promises = services.map(({ url, param, uidParam }) => {
+        if (url.includes('gpt-4o')) {
+            return fetchFromAI(url, { [param]: question, [uidParam]: 'default-uid' });
+        } else {
+            return fetchFromAI(url, { [param]: question });
+        }
+    });
 
     const responses = await Promise.allSettled(promises);
     for (const { status, value } of responses) {
         if (status === 'fulfilled' && value) {
-            return { response: value, service: services[responses.indexOf({ status, value })] };
+            return { response: value };
         }
     }
 
-    return { response: null, service: null };
+    return { response: null };
 };
 
 const fetchFromAI = async (url, params) => {
