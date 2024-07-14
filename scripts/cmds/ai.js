@@ -1,8 +1,4 @@
 const axios = require('axios');
-const NodeCache = require('node-cache');
-
-// Initialize cache
-const cache = new NodeCache({ stdTTL: 600, checkperiod: 120 });
 
 const services = [
     { url: 'http://markdevs-last-api.onrender.com/api/v2/gpt4', param: 'query' },
@@ -21,15 +17,9 @@ const services = [
 const designatedHeader = "🧋✨ | 𝙼𝚘𝚌𝚑𝚊 𝙰𝚒";
 
 const getAIResponse = async (question, messageID) => {
-    const cachedResponse = cache.get(question);
-    if (cachedResponse) {
-        return { response: cachedResponse, messageID };
-    }
-
     try {
         const response = await tryAllServices(question);
         if (response) {
-            cache.set(question, response);
             return { response, messageID };
         } else {
             throw new Error("No valid response from any AI service");
