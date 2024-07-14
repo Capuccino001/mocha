@@ -5,7 +5,6 @@ const NodeCache = require('node-cache');
 const cache = new NodeCache({ stdTTL: 600, checkperiod: 120 });
 
 const services = [
-    { url: 'http://joshweb.click/api/gpt-4o', param: 'q', uidParam: 'uid' },
     { url: 'http://markdevs-last-api.onrender.com/api/v2/gpt4', param: 'query' },
     { url: 'https://markdevs-last-api.onrender.com/api/v3/gpt4', param: 'ask' },
     { url: 'https://markdevs-last-api.onrender.com/gpt4', param: 'prompt' },
@@ -28,7 +27,7 @@ const getAIResponse = async (question, messageID) => {
     }
 
     try {
-        const { response } = await tryAllServices(question);
+        const response = await tryAllServices(question);
         if (response) {
             cache.set(question, response);
             return { response, messageID };
@@ -42,22 +41,15 @@ const getAIResponse = async (question, messageID) => {
 };
 
 const tryAllServices = async (question) => {
-    const promises = services.map(({ url, param, uidParam }) => {
-        if (url.includes('gpt-4o')) {
-            return fetchFromAI(url, { [param]: question, [uidParam]: 'default-uid' });
-        } else {
-            return fetchFromAI(url, { [param]: question });
-        }
-    });
+    const promises = services.map(({ url, param }) => fetchFromAI(url, { [param]: question }));
 
     const responses = await Promise.allSettled(promises);
     for (const { status, value } of responses) {
         if (status === 'fulfilled' && value) {
-            return { response: value };
+            return value;
         }
     }
-
-    return { response: null };
+    return null;
 };
 
 const fetchFromAI = async (url, params) => {
@@ -105,7 +97,6 @@ const onChat = async ({ event, api }) => {
     const isReplyToBot = event.messageReply && event.messageReply.senderID === api.getCurrentUserID();
     const isDirectMessage = messageContent.startsWith("ai") && event.senderID !== api.getCurrentUserID();
 
-    // Process direct messages starting with "ai" or replies to the bot with the designated header
     if (isDirectMessage || (isReplyToBot && event.messageReply.body.startsWith(designatedHeader))) {
         const userMessage = isDirectMessage ? messageContent.replace(/^ai\s*/, "").trim() : messageContent;
         const botReplyMessage = isReplyToBot ? event.messageReply.body : "";
