@@ -44,7 +44,10 @@ const tryAllServices = async (question) => {
 
 const fetchFromAI = async (url, params) => {
     try {
-        const { data } = await axios.get(url, { params });
+        const { data } = await axios.get(url, {
+            params,
+            timeout: 5000  // Timeout set to 5 seconds
+        });
         return data.gpt4 || data.reply || data.response || data.answer || data.message;
     } catch (error) {
         console.error(`Network Error fetching from ${url}:`, error.message);
