@@ -15,81 +15,41 @@ const designatedHeader = "🧋✨ | 𝙼𝚘𝚌𝚑𝚊 𝙰𝚒";
 
 const getAIResponse = async (question) => {
     for (const { url, param } of services) {
-        const response = await fetchFromAI(url, { [param]: question });
-        if (response) {
-            return response;
+        try {
+            const { data } = await axios.get(url, { params: { [param]: question }, timeout: 5000 });
+            const response = data.gpt4 || data.reply || data.response || data.answer || data.message;
+            if (response) return response;
+        } catch (error) {
+            console.error(`Error fetching from ${url}:`, error.message);
         }
     }
     throw new Error("No valid response from any AI service");
 };
 
-const fetchFromAI = async (url, params) => {
+const handleRequest = async (api, event, input) => {
     try {
-        const { data } = await axios.get(url, {
-            params,
-            timeout: 5000  // Timeout set to 5 seconds
-        });
-        return data.gpt4 || data.reply || data.response || data.answer || data.message;
-    } catch (error) {
-        console.error(`Network Error fetching from ${url}:`, error.message);
-        return null;
-    }
-};
-
-const handleCommand = async (api, event, args) => {
-    try {
-        const question = args.join(" ").trim();
-        if (!question) {
-            api.sendMessage(`${designatedHeader}\n━━━━━━━━━━━━━━━━\nHello! How can I assist you today?\n━━━━━━━━━━━━━━━━`, event.threadID, event.messageID);
-            return;
-        }
-
-        const response = await getAIResponse(question);
-        api.sendMessage(`${designatedHeader}\n━━━━━━━━━━━━━━━━\n${response}\n━━━━━━━━━━━━━━━━`, event.threadID, event.messageID);
-    } catch (error) {
-        console.error("Error in handleCommand:", error.message);
-        api.sendMessage("An error occurred while processing your request.", event.threadID);
-    }
-};
-
-const onStart = async ({ api, event, args }) => {
-    try {
-        const input = args.join(' ').trim();
         if (!input) {
             api.sendMessage(`${designatedHeader}\n━━━━━━━━━━━━━━━━\nHello! How can I assist you today?\n━━━━━━━━━━━━━━━━`, event.threadID, event.messageID);
             return;
         }
-
         const response = await getAIResponse(input);
         api.sendMessage(`${designatedHeader}\n━━━━━━━━━━━━━━━━\n${response}\n━━━━━━━━━━━━━━━━`, event.threadID, event.messageID);
     } catch (error) {
-        console.error("Error in onStart:", error.message);
+        console.error("Error in handleRequest:", error.message);
         api.sendMessage("An error occurred while processing your request.", event.threadID);
     }
 };
 
+const onStart = async ({ api, event, args }) => handleRequest(api, event, args.join(' ').trim());
+
 const onChat = async ({ event, api }) => {
     const messageContent = event.body.trim().toLowerCase();
-    const isReplyToBot = event.messageReply && event.messageReply.senderID === api.getCurrentUserID();
+    const isReplyToBot = event.messageReply?.senderID === api.getCurrentUserID();
     const isDirectMessage = messageContent.startsWith("ai") && event.senderID !== api.getCurrentUserID();
 
     if (isDirectMessage || (isReplyToBot && event.messageReply.body.startsWith(designatedHeader))) {
-        const userMessage = isDirectMessage ? messageContent.replace(/^ai\s*/, "").trim() : messageContent;
-        const botReplyMessage = isReplyToBot ? event.messageReply.body : "";
-        const input = `${botReplyMessage}\n${userMessage}`.trim();
-
-        if (!input) {
-            api.sendMessage(`${designatedHeader}\n━━━━━━━━━━━━━━━━\nHello! How can I assist you today?\n━━━━━━━━━━━━━━━━`, event.threadID, event.messageID);
-            return;
-        }
-
-        try {
-            const response = await getAIResponse(input);
-            api.sendMessage(`${designatedHeader}\n━━━━━━━━━━━━━━━━\n${response}\n━━━━━━━━━━━━━━━━`, event.threadID, event.messageID);
-        } catch (error) {
-            console.error("Error in onChat:", error.message);
-            api.sendMessage("An error occurred while processing your request.", event.threadID);
-        }
+        const input = isDirectMessage ? messageContent.replace(/^ai\s*/, "").trim() : messageContent;
+        await handleRequest(api, event, input);
     }
 };
 
@@ -102,6 +62,5 @@ module.exports = {
         shortDescription: 'AI to answer any question',
     },
     onStart,
-    onChat,
-    handleCommand
+    onChat
 };
