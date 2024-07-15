@@ -3,43 +3,24 @@ const axios = require('axios');
 const services = [
     { url: 'http://markdevs-last-api.onrender.com/api/v2/gpt4', param: 'query' },
     { url: 'https://markdevs-last-api.onrender.com/api/v3/gpt4', param: 'ask' },
-    { url: 'https://markdevs-last-api.onrender.com/gpt4', param: 'prompt' },
-    { url: 'http://nash-rest-api.replit.app/gpt4', param: 'query' },
     { url: 'https://openaikey-x20f.onrender.com/api', param: 'prompt' },
-    { url: 'https://samirxpikachu.onrender.com/gpt', param: 'prompt' },
     { url: 'http://jonellccprojectapis10.adaptable.app/api/chatgpt', param: 'input' },
     { url: 'https://openapi-idk8.onrender.com/bing-balanced', param: 'query' },
     { url: 'https://openapi-idk8.onrender.com/chatter', param: 'query' },
     { url: 'https://hiroshi-rest-api.replit.app/ai/turbo', param: 'ask' },
-    { url: 'https://my-api-v1.onrender.com/api/v2/gpt4', param: 'query' }  // New service added
+    { url: 'https://my-api-v1.onrender.com/api/v2/gpt4', param: 'query' }
 ];
 
 const designatedHeader = "🧋✨ | 𝙼𝚘𝚌𝚑𝚊 𝙰𝚒";
 
-const getAIResponse = async (question, messageID) => {
-    try {
-        const response = await tryAllServices(question);
+const getAIResponse = async (question) => {
+    for (const { url, param } of services) {
+        const response = await fetchFromAI(url, { [param]: question });
         if (response) {
-            return { response, messageID };
-        } else {
-            throw new Error("No valid response from any AI service");
-        }
-    } catch (error) {
-        console.error("Error in getAIResponse:", error.message);
-        throw new Error("An error occurred while processing your request.");
-    }
-};
-
-const tryAllServices = async (question) => {
-    const promises = services.map(({ url, param }) => fetchFromAI(url, { [param]: question }));
-
-    const responses = await Promise.allSettled(promises);
-    for (const { status, value } of responses) {
-        if (status === 'fulfilled' && value) {
-            return value;
+            return response;
         }
     }
-    return null;
+    throw new Error("No valid response from any AI service");
 };
 
 const fetchFromAI = async (url, params) => {
@@ -55,15 +36,16 @@ const fetchFromAI = async (url, params) => {
     }
 };
 
-const handleCommand = async (api, event, args, message) => {
+const handleCommand = async (api, event, args) => {
     try {
         const question = args.join(" ").trim();
         if (!question) {
-            throw new Error("Please provide a question to get an answer.");
+            api.sendMessage(`${designatedHeader}\n━━━━━━━━━━━━━━━━\nHello! How can I assist you today?\n━━━━━━━━━━━━━━━━`, event.threadID, event.messageID);
+            return;
         }
 
-        const { response, messageID } = await getAIResponse(question, event.messageID);
-        api.sendMessage(`🧋✨ | 𝙼𝚘𝚌𝚑𝚊 𝙰𝚒\n━━━━━━━━━━━━━━━━\n${response}\n━━━━━━━━━━━━━━━━`, event.threadID, messageID);
+        const response = await getAIResponse(question);
+        api.sendMessage(`${designatedHeader}\n━━━━━━━━━━━━━━━━\n${response}\n━━━━━━━━━━━━━━━━`, event.threadID, event.messageID);
     } catch (error) {
         console.error("Error in handleCommand:", error.message);
         api.sendMessage("An error occurred while processing your request.", event.threadID);
@@ -74,11 +56,12 @@ const onStart = async ({ api, event, args }) => {
     try {
         const input = args.join(' ').trim();
         if (!input) {
-            throw new Error("Please provide input to start.");
+            api.sendMessage(`${designatedHeader}\n━━━━━━━━━━━━━━━━\nHello! How can I assist you today?\n━━━━━━━━━━━━━━━━`, event.threadID, event.messageID);
+            return;
         }
 
-        const { response, messageID } = await getAIResponse(input, event.messageID);
-        api.sendMessage(`🧋✨ | 𝙼𝚘𝚌𝚑𝚊 𝙰𝚒\n━━━━━━━━━━━━━━━━\n${response}\n━━━━━━━━━━━━━━━━`, event.threadID, messageID);
+        const response = await getAIResponse(input);
+        api.sendMessage(`${designatedHeader}\n━━━━━━━━━━━━━━━━\n${response}\n━━━━━━━━━━━━━━━━`, event.threadID, event.messageID);
     } catch (error) {
         console.error("Error in onStart:", error.message);
         api.sendMessage("An error occurred while processing your request.", event.threadID);
@@ -95,9 +78,14 @@ const onChat = async ({ event, api }) => {
         const botReplyMessage = isReplyToBot ? event.messageReply.body : "";
         const input = `${botReplyMessage}\n${userMessage}`.trim();
 
+        if (!input) {
+            api.sendMessage(`${designatedHeader}\n━━━━━━━━━━━━━━━━\nHello! How can I assist you today?\n━━━━━━━━━━━━━━━━`, event.threadID, event.messageID);
+            return;
+        }
+
         try {
-            const { response, messageID } = await getAIResponse(input, event.messageID);
-            api.sendMessage(`🧋✨ | 𝙼𝚘𝚌𝚑𝚊 𝙰𝚒\n━━━━━━━━━━━━━━━━\n${response}\n━━━━━━━━━━━━━━━━`, event.threadID, messageID);
+            const response = await getAIResponse(input);
+            api.sendMessage(`${designatedHeader}\n━━━━━━━━━━━━━━━━\n${response}\n━━━━━━━━━━━━━━━━`, event.threadID, event.messageID);
         } catch (error) {
             console.error("Error in onChat:", error.message);
             api.sendMessage("An error occurred while processing your request.", event.threadID);
