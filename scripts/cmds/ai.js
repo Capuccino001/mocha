@@ -18,6 +18,15 @@ async function gptChatService2(prompt, senderID) {
   }
 }
 
+async function gptChatService3(prompt) {
+  try {
+    const response = await axios.get(`https://markdevs-last-api.onrender.com/api/v3/gpt4?ask=${encodeURIComponent(prompt)}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+}
+
 const ArYAN = [
   'ai',
 ];
@@ -67,14 +76,21 @@ module.exports = {
         return;
       }
 
-      // Call both APIs concurrently and choose the fastest response
-      const [answerFromService1, answerFromService2] = await Promise.all([
+      // Call all three APIs concurrently and choose the fastest response
+      const [answerFromService1, answerFromService2, answerFromService3] = await Promise.all([
         gptChatService1(prompt),
         gptChatService2(prompt, event.senderID),
+        gptChatService3(prompt),
       ]);
 
       // Determine which response came first and use that
-      const fastestAnswer = answerFromService1.length <= answerFromService2.length ? answerFromService1 : answerFromService2;
+      let fastestAnswer = answerFromService1;
+      if (answerFromService2.length < fastestAnswer.length) {
+        fastestAnswer = answerFromService2;
+      }
+      if (answerFromService3.length < fastestAnswer.length) {
+        fastestAnswer = answerFromService3;
+      }
 
       const finalMsg = `${getLang("header")}\n${fastestAnswer}\n${getLang("footer")}`;
       api.editMessage(finalMsg, loadingReply.messageID);
