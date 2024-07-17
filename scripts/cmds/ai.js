@@ -1,20 +1,14 @@
 const axios = require('axios');
 
-async function gptChatService1(prompt) {
-  try {
-    const response = await axios.get(`https://global-sprak.onrender.com/api/gpt?prompt=${encodeURIComponent(prompt)}`);
-    return response.data.answer;
-  } catch (error) {
-    throw error;
-  }
-}
+const conversationContext = {};
+const botUID = '61561393752978';
 
 async function gptChatService2(prompt, senderID) {
   try {
     const response = await axios.get(`https://gpt-four.vercel.app/gpt?prompt=${encodeURIComponent(prompt)}&uid=${senderID}`);
     return response.data.answer;
   } catch (error) {
-    throw error;
+    throw new Error(`Service2 Error: ${error.message}`);
   }
 }
 
@@ -23,13 +17,11 @@ async function gptChatService3(prompt) {
     const response = await axios.get(`https://markdevs-last-api.onrender.com/api/v3/gpt4?ask=${encodeURIComponent(prompt)}`);
     return response.data;
   } catch (error) {
-    throw error;
+    throw new Error(`Service3 Error: ${error.message}`);
   }
 }
 
-const ArYAN = [
-  'ai',
-];
+const ArYAN = ['ai'];
 
 module.exports = {
   config: {
@@ -59,12 +51,20 @@ module.exports = {
   onChat: async function ({ api, event, args, getLang, message }) {
     try {
       const prefix = ArYAN.find((p) => event.body && event.body.toLowerCase().startsWith(p));
+      let prompt;
 
-      if (!prefix) {
-        return;
+      if (prefix) {
+        prompt = event.body.substring(prefix.length).trim() || 'hello';
+      } else {
+        // If no prefix, consider it as a continuation of the previous conversation only if it's a direct reply to the bot's UID
+        const previousContext = conversationContext[event.threadID];
+        if (previousContext && event.messageReply && event.messageReply.senderID === botUID) {
+          prompt = `${previousContext.context} ${event.body.trim()}`;
+        } else {
+          // If no previous context or not a direct reply to the bot's UID, ignore the message
+          return;
+        }
       }
-
-      let prompt = event.body.substring(prefix.length).trim() || 'hello';
 
       const loadingMessage = getLang("loading");
       const loadingReply = await message.reply(loadingMessage);
@@ -76,24 +76,63 @@ module.exports = {
         return;
       }
 
-      // Call all three APIs concurrently and choose the fastest response
-      const [answerFromService1, answerFromService2, answerFromService3] = await Promise.all([
-        gptChatService1(prompt),
-        gptChatService2(prompt, event.senderID),
-        gptChatService3(prompt),
-      ]);
+      let fastestAnswer;
+      try {
+        fastestAnswer = await gptChatService2(prompt, event.senderID);
+      } catch (error) {
+        console.log(`Service2 failed: ${error.message}. Trying Service3...`);
+        fastestAnswer = await gptChatService3(prompt);
+      }
 
-      // Determine which response came first and use that
-      let fastestAnswer = answerFromService1;
-      if (answerFromService2.length < fastestAnswer.length) {
-        fastestAnswer = answerFromService2;
+      // Update the conversation context
+      const finalMsg = `${getLang("header")}\n${fastestAnswer}\n${getLang("footer")}`;
+      await api.editMessage(finalMsg, loadingReply.messageID);
+
+      // Track the final reply message context for continuous conversation
+      conversationContext[event.threadID] = {
+        context: fastestAnswer,
+      };
+
+      console.log('Sent answer as a reply to user');
+    } catch (error) {
+      console.error(`Failed to get answer: ${error.message}`);
+      api.sendMessage(
+        `${error.message}.`,
+        event.threadID
+      );
+    }
+  },
+
+  onMessageReply: async function ({ api, event, getLang, message }) {
+    try {
+      const previousContext = conversationContext[event.threadID];
+      if (!previousContext || event.messageReply.senderID !== botUID) {
+        return;
       }
-      if (answerFromService3.length < fastestAnswer.length) {
-        fastestAnswer = answerFromService3;
+
+      let prompt = event.body.trim();
+
+      // Include the previous context in the prompt
+      prompt = `${previousContext.context} ${prompt}`;
+
+      const loadingMessage = getLang("loading");
+      const loadingReply = await message.reply(loadingMessage);
+
+      let fastestAnswer;
+      try {
+        fastestAnswer = await gptChatService2(prompt, event.senderID);
+      } catch (error) {
+        console.log(`Service2 failed: ${error.message}. Trying Service3...`);
+        fastestAnswer = await gptChatService3(prompt);
       }
+
+      // Update the conversation context
+      conversationContext[event.threadID] = {
+        context: fastestAnswer,
+      };
 
       const finalMsg = `${getLang("header")}\n${fastestAnswer}\n${getLang("footer")}`;
-      api.editMessage(finalMsg, loadingReply.messageID);
+      await api.editMessage(finalMsg, loadingReply.messageID);
 
       console.log('Sent answer as a reply to user');
     } catch (error) {
