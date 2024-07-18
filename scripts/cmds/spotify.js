@@ -50,7 +50,7 @@ module.exports = {
       const services = [
         { url: 'https://spotify-play-iota.vercel.app/spotify', params: { query: songTitle } },
         { url: 'http://zcdsphapilist.replit.app/spotify', params: { q: songTitle } },
-        { url: 'https://samirxpikachu.onrender.com/spotifysearch', params: { q: songTitle } },
+        { url: 'https://samirxpikachuio.onrender.com/spotifysearch', params: { q: songTitle } },
         { url: 'https://openapi-idk8.onrender.com/search-song', params: { song: songTitle } },
         { url: 'https://markdevs-last-api.onrender.com/search/spotify', params: { q: songTitle } }
       ];
