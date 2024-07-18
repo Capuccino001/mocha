@@ -3,7 +3,7 @@ const fs = require("fs-extra");
 const path = require("path");
 
 const services = [
-  { url: 'https://samirxpikachu.onrender.com/pinterest', param: 'query' },
+  { url: 'https://samirxpikachuio.onrender.com/pinterest', param: 'query' },
   { url: 'https://celestial-dainsleif-v2.onrender.com/pinterest', param: 'pinte' },
   { url: 'https://itsaryan.onrender.com/api/pinterest', param: 'query' },
   { url: async () => ({ url: `${await baseApiUrl()}/pinterest`, param: 'search' }) },
