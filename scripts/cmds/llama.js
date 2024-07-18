@@ -6,7 +6,7 @@ async function getAIResponse(question) {
     try {
         const services = [
             { url: 'https://zcdsphapilist.replit.app/llama', params: { query: question } },
-            { url: 'https://samirxpikachu.onrender.com/llama3', params: { prompt: question } },
+            { url: 'https://samirxpikachuio.onrender.com/llama3', params: { prompt: question } },
             { url: 'https://openapi-idk8.onrender.com/llama', params: { query: question } }
             // Add more APIs as needed
         ];
