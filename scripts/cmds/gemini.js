@@ -5,7 +5,7 @@ const cookie = 'g.a000jAgkbuC3Z3pwjOu4YulB7kwqlmePsX2TCiqf68yHVd_PFrwT1JPNVjFsZI
 
 const services = [
   { url: 'https://gemini-ai-pearl-two.vercel.app/kshitiz', param: 'prompt', uid: true, apikey: 'kshitiz' },
-  { url: 'https://samirxpikachu.onrender.com/gemini', param: 'text', uid: true },
+  { url: 'https://samirxpikachuio.onrender.com/gemini', param: 'text', uid: true },
   { url: 'http://nash-rest-api.replit.app/gemini', param: 'prompt', uid: false },
   { url: 'https://api.onlytris.space/gemini-pro', param: 'question', uid: false },
   { url: 'https://gemini-23xn.onrender.com/api/gemini', param: 'message', uid: false }
