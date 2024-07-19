@@ -3,22 +3,34 @@ const axios = require('axios');
 const conversationContext = {};
 const botUID = '61561393752978';
 
-async function gptChatService2(prompt, senderID) {
+const services = [
+  { url: 'https://markdevs-last-api.onrender.com/api/v3/gpt4', param: { ask: 'ask' } },
+  { url: 'https://gpt-four.vercel.app/gpt', param: { prompt: 'prompt', uid: 'uid' } }
+];
+
+async function callService(service, prompt, senderID) {
+  const params = {};
+  for (const [key, value] of Object.entries(service.param)) {
+    params[key] = key === 'uid' ? senderID : encodeURIComponent(prompt);
+  }
+  const queryString = new URLSearchParams(params).toString();
   try {
-    const response = await axios.get(`https://gpt-four.vercel.app/gpt?prompt=${encodeURIComponent(prompt)}&uid=${senderID}`);
-    return response.data.answer;
+    const response = await axios.get(`${service.url}?${queryString}`);
+    return response.data.answer || response.data;
   } catch (error) {
-    throw new Error(`Service2 Error: ${error.message}`);
+    throw new Error(`Error from ${service.url}: ${error.message}`);
   }
 }
 
-async function gptChatService3(prompt) {
-  try {
-    const response = await axios.get(`https://markdevs-last-api.onrender.com/api/v3/gpt4?ask=${encodeURIComponent(prompt)}`);
-    return response.data;
-  } catch (error) {
-    throw new Error(`Service3 Error: ${error.message}`);
+async function getFastestValidAnswer(prompt, senderID) {
+  const promises = services.map(service => callService(service, prompt, senderID));
+  const results = await Promise.allSettled(promises);
+  for (const result of results) {
+    if (result.status === 'fulfilled' && result.value) {
+      return result.value;
+    }
   }
+  throw new Error('All services failed to provide a valid answer');
 }
 
 const ArYAN = ['ai'];
@@ -48,6 +60,7 @@ module.exports = {
   },
 
   onStart: async function () {},
+
   onChat: async function ({ api, event, args, getLang, message }) {
     try {
       const prefix = ArYAN.find((p) => event.body && event.body.toLowerCase().startsWith(p));
@@ -76,26 +89,28 @@ module.exports = {
         return;
       }
 
-      let fastestAnswer;
       try {
-        fastestAnswer = await gptChatService2(prompt, event.senderID);
+        const fastestAnswer = await getFastestValidAnswer(prompt, event.senderID);
+
+        // Update the conversation context
+        const finalMsg = `${getLang("header")}\n${fastestAnswer}\n${getLang("footer")}`;
+        await api.editMessage(finalMsg, loadingReply.messageID);
+
+        // Track the final reply message context for continuous conversation
+        conversationContext[event.threadID] = {
+          context: fastestAnswer,
+        };
+
+        console.log('Sent answer as a reply to user');
       } catch (error) {
-        console.log(`Service2 failed: ${error.message}. Trying Service3...`);
-        fastestAnswer = await gptChatService3(prompt);
+        console.error(`Failed to get answer: ${error.message}`);
+        api.sendMessage(
+          `${error.message}.`,
+          event.threadID
+        );
       }
-
-      // Update the conversation context
-      const finalMsg = `${getLang("header")}\n${fastestAnswer}\n${getLang("footer")}`;
-      await api.editMessage(finalMsg, loadingReply.messageID);
-
-      // Track the final reply message context for continuous conversation
-      conversationContext[event.threadID] = {
-        context: fastestAnswer,
-      };
-
-      console.log('Sent answer as a reply to user');
     } catch (error) {
-      console.error(`Failed to get answer: ${error.message}`);
+      console.error(`Failed to process chat: ${error.message}`);
       api.sendMessage(
         `${error.message}.`,
         event.threadID
@@ -118,25 +133,27 @@ module.exports = {
       const loadingMessage = getLang("loading");
       const loadingReply = await message.reply(loadingMessage);
 
-      let fastestAnswer;
       try {
-        fastestAnswer = await gptChatService2(prompt, event.senderID);
+        const fastestAnswer = await getFastestValidAnswer(prompt, event.senderID);
+
+        // Update the conversation context
+        conversationContext[event.threadID] = {
+          context: fastestAnswer,
+        };
+
+        const finalMsg = `${getLang("header")}\n${fastestAnswer}\n${getLang("footer")}`;
+        await api.editMessage(finalMsg, loadingReply.messageID);
+
+        console.log('Sent answer as a reply to user');
       } catch (error) {
-        console.log(`Service2 failed: ${error.message}. Trying Service3...`);
-        fastestAnswer = await gptChatService3(prompt);
+        console.error(`Failed to get answer: ${error.message}`);
+        api.sendMessage(
+          `${error.message}.`,
+          event.threadID
+        );
       }
-
-      // Update the conversation context
-      conversationContext[event.threadID] = {
-        context: fastestAnswer,
-      };
-
-      const finalMsg = `${getLang("header")}\n${fastestAnswer}\n${getLang("footer")}`;
-      await api.editMessage(finalMsg, loadingReply.messageID);
-
-      console.log('Sent answer as a reply to user');
     } catch (error) {
-      console.error(`Failed to get answer: ${error.message}`);
+      console.error(`Failed to process message reply: ${error.message}`);
       api.sendMessage(
         `${error.message}.`,
         event.threadID
