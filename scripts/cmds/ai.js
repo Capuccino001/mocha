@@ -5,7 +5,8 @@ const botUID = '61561393752978';
 
 const services = [
   { url: 'https://markdevs-last-api.onrender.com/api/v3/gpt4', param: { ask: 'ask' } },
-  { url: 'https://gpt-four.vercel.app/gpt', param: { prompt: 'prompt', uid: 'uid' } }
+  { url: 'https://gpt-four.vercel.app/gpt', param: { prompt: 'prompt', uid: 'uid' } },
+  { url: 'https://king-aryanapis.onrender.com/api/gpt', param: { prompt: 'prompt' } } // Added new service
 ];
 
 async function callService(service, prompt, senderID) {
@@ -33,7 +34,7 @@ async function getFastestValidAnswer(prompt, senderID) {
   throw new Error('All services failed to provide a valid answer');
 }
 
-const ArYAN = ['ai','-ai'];
+const ArYAN = ['ai', '-ai'];
 
 module.exports = {
   config: {
@@ -46,15 +47,15 @@ module.exports = {
       en: 'This is a large Ai language model trained by OpenAi, it is designed to assist with a wide range of tasks.',
     },
     guide: {
-      en: '\nAi < questions >\n\n🔎 𝗚𝘂𝗶𝗱𝗲\nAi what is capital of France?',
+      en: '\nAi < questions >\n\n🔎 𝗚𝘂𝗂𝗱𝗲\nAi what is capital of France?',
     },
   },
 
   langs: {
     en: {
       final: "",
-      loading: '𝖠𝗇𝗌𝗐𝖾𝗋𝗂𝗇𝗀 𝗒𝗈𝗎𝗋 𝗊𝗎𝖾𝗌𝗍𝗂𝗈𝗇 𝗉𝗅𝖾𝖺𝗌𝖾 𝗐𝖺𝗂𝗍...',
-      header: "🧋✨ | 𝙼𝚘𝚌𝚑𝚊 𝙰𝚒\n━━━━━━━━━━━━━━━━",
+      loading: '𝖠𝗇𝗌𝗂𝗇𝗀 𝗒𝗈𝗎𝗋 𝗊𝗎𝖾𝗌𝗍𝗂𝗈𝗇 𝗉𝗅𝖾𝖺𝗌𝖾 𝗐𝖺𝗂𝗍...',
+      header: "🧋✨ | 𝙼𝚘𝚌𝚑𝚒𝚊 𝙰𝚒\n━━━━━━━━━━━━━━━━",
       footer: "━━━━━━━━━━━━━━━━",
     }
   },
@@ -69,12 +70,10 @@ module.exports = {
       if (prefix) {
         prompt = event.body.substring(prefix.length).trim() || 'hello';
       } else {
-        // If no prefix, consider it as a continuation of the previous conversation only if it's a direct reply to the bot's UID
         const previousContext = conversationContext[event.threadID];
         if (previousContext && event.messageReply && event.messageReply.senderID === botUID) {
           prompt = `${previousContext.context} ${event.body.trim()}`;
         } else {
-          // If no previous context or not a direct reply to the bot's UID, ignore the message
           return;
         }
       }
@@ -92,11 +91,9 @@ module.exports = {
       try {
         const fastestAnswer = await getFastestValidAnswer(prompt, event.senderID);
 
-        // Update the conversation context
         const finalMsg = `${getLang("header")}\n${fastestAnswer}\n${getLang("footer")}`;
         await api.editMessage(finalMsg, loadingReply.messageID);
 
-        // Track the final reply message context for continuous conversation
         conversationContext[event.threadID] = {
           context: fastestAnswer,
         };
@@ -127,7 +124,6 @@ module.exports = {
 
       let prompt = event.body.trim();
 
-      // Include the previous context in the prompt
       prompt = `${previousContext.context} ${prompt}`;
 
       const loadingMessage = getLang("loading");
@@ -136,7 +132,6 @@ module.exports = {
       try {
         const fastestAnswer = await getFastestValidAnswer(prompt, event.senderID);
 
-        // Update the conversation context
         conversationContext[event.threadID] = {
           context: fastestAnswer,
         };
