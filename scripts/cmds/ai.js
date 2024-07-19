@@ -33,7 +33,7 @@ async function getFastestValidAnswer(prompt, senderID) {
   throw new Error('All services failed to provide a valid answer');
 }
 
-const ArYAN = ['ai'];
+const ArYAN = ['ai','-ai'];
 
 module.exports = {
   config: {
