@@ -3,8 +3,6 @@ const fs = require('fs');
 const path = require('path');
 
 const imageGenerationServices = [
-    { url: 'https://samirxpikachuio.onrender.com/animagine', param: 'prompt' },
-    { url: 'https://samirxpikachuio.onrender.com/mageV2', param: 'prompt' },
     { url: 'https://markdevs-last-api.onrender.com/emi', param: 'prompt' },
     { url: 'https://emi-gen-j0rj.onrender.com/emi', param: 'prompt' },
     { url: 'https://samirxpikachuio.onrender.com/mageDef', param: 'prompt' } // New service added
