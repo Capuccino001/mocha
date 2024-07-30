@@ -1,11 +1,10 @@
 const axios = require('axios');
 
 const conversationContext = {};
-const botUID = '61563085537562';
+const botUID = '61563070871645';
 
 const services = [
   { url: 'https://markdevs-last-api.onrender.com/api/v3/gpt4', param: { ask: 'ask' } },
-  { url: 'https://gpt-four.vercel.app/gpt', param: { prompt: 'prompt', uid: 'uid' } },
   { url: 'https://king-aryanapis.onrender.com/api/gpt', param: { prompt: 'prompt' } } // Added new service
 ];
 
