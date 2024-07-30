@@ -1,7 +1,6 @@
 const axios = require('axios');
 
 const conversationContext = {};
-const botUID = '61563070871645';
 
 const services = [
   { url: 'https://markdevs-last-api.onrender.com/api/v3/gpt4', param: { ask: 'ask' } },
@@ -70,7 +69,7 @@ module.exports = {
         prompt = event.body.substring(prefix.length).trim() || 'hello';
       } else {
         const previousContext = conversationContext[event.threadID];
-        if (previousContext && event.messageReply && event.messageReply.senderID === botUID) {
+        if (previousContext && event.messageReply && event.messageReply.senderID) {
           prompt = `${previousContext.context} ${event.body.trim()}`;
         } else {
           return;
@@ -79,6 +78,7 @@ module.exports = {
 
       const loadingMessage = getLang("loading");
       const loadingReply = await message.reply(loadingMessage);
+      const botUID = loadingReply.senderID; // Get the bot's UID from the loading message
 
       if (prompt === 'hello') {
         const greetingMessage = `${getLang("header")}\nHello! How can I assist you today?\n${getLang("footer")}`;
@@ -95,6 +95,7 @@ module.exports = {
 
         conversationContext[event.threadID] = {
           context: fastestAnswer,
+          botUID: botUID // Store botUID in the conversation context
         };
 
         console.log('Sent answer as a reply to user');
@@ -117,7 +118,7 @@ module.exports = {
   onMessageReply: async function ({ api, event, getLang, message }) {
     try {
       const previousContext = conversationContext[event.threadID];
-      if (!previousContext || event.messageReply.senderID !== botUID) {
+      if (!previousContext || event.messageReply.senderID !== previousContext.botUID) {
         return;
       }
 
@@ -133,6 +134,7 @@ module.exports = {
 
         conversationContext[event.threadID] = {
           context: fastestAnswer,
+          botUID: previousContext.botUID // Retain botUID in the conversation context
         };
 
         const finalMsg = `${getLang("header")}\n${fastestAnswer}\n${getLang("footer")}`;
