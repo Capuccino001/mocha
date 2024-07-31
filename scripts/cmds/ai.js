@@ -55,14 +55,13 @@ module.exports = {
       en: 'This is a large Ai language model trained by OpenAi, it is designed to assist with a wide range of tasks.',
     },
     guide: {
-      en: '\nAi < questions >\n\n🔎 𝗚𝘂𝗂𝗱𝗲\nAi what is capital of France?',
+      en: '\nAi < questions >\n\n🔎 𝗚𝘂𝗶𝗱𝗲\nAi what is capital of France?',
     },
   },
 
   langs: {
     en: {
       final: "",
-      loading: '𝖠𝗇𝗌𝗐𝖾𝗋𝗂𝗇𝗀 𝗒𝗈𝗎𝗋 𝗊𝗎𝖾𝗌𝗍𝗂𝗈𝗇 𝗉𝗅𝖾𝖺𝗌𝖾 𝗐𝖺𝗂𝗍...',
       header: "🧋✨ | 𝙼𝚘𝚌𝚑𝚊 𝙰𝚒\n━━━━━━━━━━━━━━━━",
       footer: "━━━━━━━━━━━━━━━━",
     }
@@ -77,18 +76,30 @@ module.exports = {
       const prefix = ArYAN.find(p => event.body && event.body.toLowerCase().startsWith(p));
       let prompt;
 
-      if (prefix) {
+      // Check if the user is replying to a bot message
+      if (event.type === 'message_reply') {
+        const replyMessage = event.messageReply; // Adjusted to use the replyMessage directly
+
+        // Check if the bot's original message starts with the header
+        if (replyMessage.body && replyMessage.body.startsWith(getLang("header"))) {
+          // Extract the user's reply from the event
+          prompt = event.body.trim();
+
+          // Combine the user's reply with the bot's original message
+          prompt = `${replyMessage.body}\n\nUser reply: ${prompt}`;
+        } else {
+          // If the bot's original message doesn't start with the header, return
+          return;
+        }
+      } else if (prefix) {
         prompt = event.body.substring(prefix.length).trim() || 'hello';
       } else {
         return;
       }
 
-      const loadingMessage = getLang("loading");
-      const loadingReply = await message.reply(loadingMessage);
-
       if (prompt === 'hello') {
         const greetingMessage = `${getLang("header")}\nHello! How can I assist you today?\n${getLang("footer")}`;
-        api.editMessage(greetingMessage, loadingReply.messageID);
+        api.sendMessage(greetingMessage, event.threadID, event.messageID);
         console.log('Sent greeting message as a reply to user');
         return;
       }
@@ -97,21 +108,23 @@ module.exports = {
         const fastestAnswer = await getFastestValidAnswer(prompt, event.senderID);
 
         const finalMsg = `${getLang("header")}\n${fastestAnswer}\n${getLang("footer")}`;
-        await api.editMessage(finalMsg, loadingReply.messageID);
+        api.sendMessage(finalMsg, event.threadID, event.messageID);
 
         console.log('Sent answer as a reply to user');
       } catch (error) {
         console.error(`Failed to get answer: ${error.message}`);
         api.sendMessage(
           `${error.message}.`,
-          event.threadID
+          event.threadID,
+          event.messageID
         );
       }
     } catch (error) {
       console.error(`Failed to process chat: ${error.message}`);
       api.sendMessage(
         `${error.message}.`,
-        event.threadID
+        event.threadID,
+        event.messageID
       );
     }
   }
