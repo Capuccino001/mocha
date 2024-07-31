@@ -1,8 +1,5 @@
 const axios = require('axios');
 
-const conversationContext = {};
-const contextTTL = 30 * 60 * 1000; // 30 minutes
-
 const services = [
   { url: 'https://markdevs-last-api.onrender.com/api/v3/gpt4', param: { ask: 'ask' } },
   { url: 'https://king-aryanapis.onrender.com/api/gpt', param: { prompt: 'prompt' } },
@@ -11,7 +8,6 @@ const services = [
 
 async function callService(service, prompt, senderID) {
   if (service.isCustom) {
-    // Special handling for custom service
     try {
       const response = await axios.get(`${service.url}?${service.param.prompt}=${encodeURIComponent(prompt)}`);
       return response.data.answer || response.data;
@@ -20,7 +16,6 @@ async function callService(service, prompt, senderID) {
       throw new Error(`Error from ${service.url}: ${error.message}`);
     }
   } else {
-    // Original handling for standard services
     const params = {};
     for (const [key, value] of Object.entries(service.param)) {
       params[key] = key === 'uid' ? senderID : encodeURIComponent(prompt);
@@ -45,15 +40,6 @@ async function getFastestValidAnswer(prompt, senderID) {
     }
   }
   throw new Error('All services failed to provide a valid answer');
-}
-
-function cleanUpOldContexts() {
-  const now = Date.now();
-  for (const [threadID, context] of Object.entries(conversationContext)) {
-    if (now - context.timestamp > contextTTL) {
-      delete conversationContext[threadID];
-    }
-  }
 }
 
 const ArYAN = ['ai', '-ai'];
@@ -83,7 +69,7 @@ module.exports = {
   },
 
   onStart: async function () {
-    cleanUpOldContexts();
+    // Empty onStart function
   },
 
   onChat: async function ({ api, event, args, getLang, message }) {
@@ -94,17 +80,11 @@ module.exports = {
       if (prefix) {
         prompt = event.body.substring(prefix.length).trim() || 'hello';
       } else {
-        const previousContext = conversationContext[event.threadID];
-        if (previousContext && event.messageReply && event.messageReply.senderID) {
-          prompt = `${previousContext.context} ${event.body.trim()}`;
-        } else {
-          return;
-        }
+        return;
       }
 
       const loadingMessage = getLang("loading");
       const loadingReply = await message.reply(loadingMessage);
-      const botUID = loadingReply.senderID; // Get the bot's UID from the loading message
 
       if (prompt === 'hello') {
         const greetingMessage = `${getLang("header")}\nHello! How can I assist you today?\n${getLang("footer")}`;
@@ -119,12 +99,6 @@ module.exports = {
         const finalMsg = `${getLang("header")}\n${fastestAnswer}\n${getLang("footer")}`;
         await api.editMessage(finalMsg, loadingReply.messageID);
 
-        conversationContext[event.threadID] = {
-          context: fastestAnswer,
-          botUID: botUID,
-          timestamp: Date.now() // Add timestamp to manage context TTL
-        };
-
         console.log('Sent answer as a reply to user');
       } catch (error) {
         console.error(`Failed to get answer: ${error.message}`);
@@ -135,48 +109,6 @@ module.exports = {
       }
     } catch (error) {
       console.error(`Failed to process chat: ${error.message}`);
-      api.sendMessage(
-        `${error.message}.`,
-        event.threadID
-      );
-    }
-  },
-
-  onMessageReply: async function ({ api, event, getLang, message }) {
-    try {
-      const previousContext = conversationContext[event.threadID];
-      if (!previousContext || event.messageReply.senderID !== previousContext.botUID) {
-        return;
-      }
-
-      let prompt = event.body.trim();
-      prompt = `${previousContext.context} ${prompt}`;
-
-      const loadingMessage = getLang("loading");
-      const loadingReply = await message.reply(loadingMessage);
-
-      try {
-        const fastestAnswer = await getFastestValidAnswer(prompt, event.senderID);
-
-        conversationContext[event.threadID] = {
-          context: fastestAnswer,
-          botUID: previousContext.botUID,
-          timestamp: Date.now() // Update timestamp to manage context TTL
-        };
-
-        const finalMsg = `${getLang("header")}\n${fastestAnswer}\n${getLang("footer")}`;
-        await api.editMessage(finalMsg, loadingReply.messageID);
-
-        console.log('Sent answer as a reply to user');
-      } catch (error) {
-        console.error(`Failed to get answer: ${error.message}`);
-        api.sendMessage(
-          `${error.message}.`,
-          event.threadID
-        );
-      }
-    } catch (error) {
-      console.error(`Failed to process message reply: ${error.message}`);
       api.sendMessage(
         `${error.message}.`,
         event.threadID
