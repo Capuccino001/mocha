@@ -1,23 +1,38 @@
 const axios = require('axios');
 
 const conversationContext = {};
+const contextTTL = 30 * 60 * 1000; // 30 minutes
 
 const services = [
   { url: 'https://markdevs-last-api.onrender.com/api/v3/gpt4', param: { ask: 'ask' } },
-  { url: 'https://king-aryanapis.onrender.com/api/gpt', param: { prompt: 'prompt' } } // Added new service
+  { url: 'https://king-aryanapis.onrender.com/api/gpt', param: { prompt: 'prompt' } },
+  { url: 'https://gpt-four.vercel.app/gpt', param: { prompt: 'prompt' }, isCustom: true }
 ];
 
 async function callService(service, prompt, senderID) {
-  const params = {};
-  for (const [key, value] of Object.entries(service.param)) {
-    params[key] = key === 'uid' ? senderID : encodeURIComponent(prompt);
-  }
-  const queryString = new URLSearchParams(params).toString();
-  try {
-    const response = await axios.get(`${service.url}?${queryString}`);
-    return response.data.answer || response.data;
-  } catch (error) {
-    throw new Error(`Error from ${service.url}: ${error.message}`);
+  if (service.isCustom) {
+    // Special handling for custom service
+    try {
+      const response = await axios.get(`${service.url}?${service.param.prompt}=${encodeURIComponent(prompt)}`);
+      return response.data.answer || response.data;
+    } catch (error) {
+      console.error(`Custom service error from ${service.url}: ${error.message}`);
+      throw new Error(`Error from ${service.url}: ${error.message}`);
+    }
+  } else {
+    // Original handling for standard services
+    const params = {};
+    for (const [key, value] of Object.entries(service.param)) {
+      params[key] = key === 'uid' ? senderID : encodeURIComponent(prompt);
+    }
+    const queryString = new URLSearchParams(params).toString();
+    try {
+      const response = await axios.get(`${service.url}?${queryString}`);
+      return response.data.answer || response.data;
+    } catch (error) {
+      console.error(`Service error from ${service.url}: ${error.message}`);
+      throw new Error(`Error from ${service.url}: ${error.message}`);
+    }
   }
 }
 
@@ -30,6 +45,15 @@ async function getFastestValidAnswer(prompt, senderID) {
     }
   }
   throw new Error('All services failed to provide a valid answer');
+}
+
+function cleanUpOldContexts() {
+  const now = Date.now();
+  for (const [threadID, context] of Object.entries(conversationContext)) {
+    if (now - context.timestamp > contextTTL) {
+      delete conversationContext[threadID];
+    }
+  }
 }
 
 const ArYAN = ['ai', '-ai'];
@@ -58,11 +82,13 @@ module.exports = {
     }
   },
 
-  onStart: async function () {},
+  onStart: async function () {
+    cleanUpOldContexts();
+  },
 
   onChat: async function ({ api, event, args, getLang, message }) {
     try {
-      const prefix = ArYAN.find((p) => event.body && event.body.toLowerCase().startsWith(p));
+      const prefix = ArYAN.find(p => event.body && event.body.toLowerCase().startsWith(p));
       let prompt;
 
       if (prefix) {
@@ -95,7 +121,8 @@ module.exports = {
 
         conversationContext[event.threadID] = {
           context: fastestAnswer,
-          botUID: botUID // Store botUID in the conversation context
+          botUID: botUID,
+          timestamp: Date.now() // Add timestamp to manage context TTL
         };
 
         console.log('Sent answer as a reply to user');
@@ -123,7 +150,6 @@ module.exports = {
       }
 
       let prompt = event.body.trim();
-
       prompt = `${previousContext.context} ${prompt}`;
 
       const loadingMessage = getLang("loading");
@@ -134,7 +160,8 @@ module.exports = {
 
         conversationContext[event.threadID] = {
           context: fastestAnswer,
-          botUID: previousContext.botUID // Retain botUID in the conversation context
+          botUID: previousContext.botUID,
+          timestamp: Date.now() // Update timestamp to manage context TTL
         };
 
         const finalMsg = `${getLang("header")}\n${fastestAnswer}\n${getLang("footer")}`;
