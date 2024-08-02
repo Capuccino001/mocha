@@ -81,6 +81,6 @@ async function fetchLyrics(api, event, songName, attempt) {
 }
 
 function sendFormattedLyrics(api, event, title, artist, lyrics) {
-  const formattedLyrics = `🎧 | Title: ${title}\n🎤 | Artist: ${artist}\n\n${lyrics}`;
+  const formattedLyrics = `🎧 | Title: ${title}\n🎤 | Artist: ${artist}\n━━━━━━━━━━━━━━━━\n${lyrics}\n━━━━━━━━━━━━━━━━`;
   api.sendMessage(formattedLyrics, event.threadID, event.messageID);
 }
