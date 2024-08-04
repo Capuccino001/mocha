@@ -23,7 +23,7 @@ module.exports = {
                     avatar: threadInfo.imageSrc || null,
                     name: threadInfo.threadName || null,
                     theme: threadInfo.color || null, // Adjust if needed for theme
-                    emoji: threadInfo.emoji || null  // Adjust if needed for emoji
+                    emoji: threadInfo.emoji || "🧋"  // Set default and original emoji to "🧋"
                 };
 
                 await threadsData.set(threadID, initialSettings, "data.antiChangeInfoBox");
@@ -99,7 +99,7 @@ module.exports = {
                         await kickUser(api, author, threadID);
                         await revertChanges("emoji", dataAntiChange.emoji);
                     } else {
-                        const newThreadEmoji = logMessageData.thread_icon;
+                        const newThreadEmoji = logMessageData.thread_icon || "🧋"; // Default emoji to "🧋" if not provided
                         if (newThreadEmoji) await threadsData.set(threadID, newThreadEmoji, "data.antiChangeInfoBox.emoji");
                     }
                     break;
