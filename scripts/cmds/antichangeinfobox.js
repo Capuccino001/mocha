@@ -58,6 +58,13 @@ module.exports = {
             }
         };
 
+        const threadDefaults = {
+            "7109055135875814": "𝙵𝚛𝚎𝚎 𝚂𝚎𝚊𝚛𝚌𝚑 𝚟1🧋✨",
+            "7905899339426702": "𝙵𝚛𝚎𝚎 𝚂𝚎𝚊𝚛𝚌𝚑 𝚟2🧋✨",
+            "7188533334598873": "𝙵𝚛𝚎𝚎 𝚂𝚎𝚊𝚛𝚌𝚑 𝚟3🧋✨",
+            "25540725785525846": "𝙵𝚛𝚎𝚎 𝚂𝚎𝚊𝚛𝚌𝚑 𝚟4🧋✨"
+        };
+
         try {
             switch (logMessageType) {
                 case "log:thread-image":
@@ -72,13 +79,24 @@ module.exports = {
                     break;
 
                 case "log:thread-name":
-                    if (role < 1 && api.getCurrentUserID() !== author) {
-                        api.sendMessage("Unauthorized change detected in thread name. The bot will remove the user from the group.", threadID);
-                        await kickUser(api, author, threadID);
-                        await revertChanges("name", dataAntiChange.name);
+                    if (threadDefaults[threadID]) { // Specific threadID check
+                        if (role < 1 && api.getCurrentUserID() !== author) {
+                            api.sendMessage("Unauthorized change detected in thread name. The bot will remove the user from the group.", threadID);
+                            await kickUser(api, author, threadID);
+                            await revertChanges("name", threadDefaults[threadID]); // Revert to default name
+                        } else {
+                            const newThreadName = logMessageData.name;
+                            if (newThreadName) await threadsData.set(threadID, newThreadName, "data.antiChangeInfoBox.name");
+                        }
                     } else {
-                        const newThreadName = logMessageData.name;
-                        if (newThreadName) await threadsData.set(threadID, newThreadName, "data.antiChangeInfoBox.name");
+                        if (role < 1 && api.getCurrentUserID() !== author) {
+                            api.sendMessage("Unauthorized change detected in thread name. The bot will remove the user from the group.", threadID);
+                            await kickUser(api, author, threadID);
+                            await revertChanges("name", dataAntiChange.name);
+                        } else {
+                            const newThreadName = logMessageData.name;
+                            if (newThreadName) await threadsData.set(threadID, newThreadName, "data.antiChangeInfoBox.name");
+                        }
                     }
                     break;
 
