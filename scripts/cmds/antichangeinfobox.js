@@ -1,5 +1,17 @@
 const { getStreamFromURL } = global.utils;
 
+const DEFAULTS = {
+    avatar: "https://scontent-sin6-4.xx.fbcdn.net/v/t1.15752-9/453385238_898368142210556_3530930341630206152_n.jpg?_nc_cat=100&ccb=1-7&_nc_sid=9f807c&_nc_ohc=kJHxf2FdGusQ7kNvgGHnlBz&_nc_ht=scontent-sin6-4.xx&oh=03_Q7cD1QEaETOd-ELmW2_OcezHWUqU2EtUaZ1W7V6Lgxwg9YZAhA&oe=66D7117C",
+    emoji: "🧋",
+    theme: "195296273246380", // Default color
+    threadNames: {
+        "7109055135875814": "𝙵𝚛𝚎𝚎 𝚂𝚎𝚊𝚛𝚌𝚑 𝚟1🧋✨",
+        "7905899339426702": "𝙵𝚛𝚎𝚎 𝚂𝚎𝚊𝚛𝚌𝚑 𝚟2🧋✨",
+        "7188533334598873": "𝙵𝚛𝚎𝚎 𝚂𝚎𝚊𝚛𝚌𝚑 𝚟3🧋✨",
+        "25540725785525846": "𝙵𝚛𝚎𝚎 𝚂𝚎𝚊𝚛𝚌𝚑 𝚟4🧋✨"
+    }
+};
+
 module.exports = {
     config: {
         name: "antichangeinfobox",
@@ -20,10 +32,10 @@ module.exports = {
 
                 // Extract current settings
                 const initialSettings = {
-                    avatar: threadInfo.imageSrc || null,
+                    avatar: threadInfo.imageSrc || DEFAULTS.avatar,
                     name: threadInfo.threadName || null,
                     theme: threadInfo.color || null, // Adjust if needed for theme
-                    emoji: threadInfo.emoji || "🧋"  // Set default and original emoji to "🧋"
+                    emoji: threadInfo.emoji || DEFAULTS.emoji  // Set default and original emoji to "🧋"
                 };
 
                 await threadsData.set(threadID, initialSettings, "data.antiChangeInfoBox");
@@ -50,19 +62,12 @@ module.exports = {
                     await api.setTitle(newValue, threadID);
                     break;
                 case "theme":
-                    await api.changeThreadColor(newValue || "195296273246380", threadID); // Default color
+                    await api.changeThreadColor(newValue || DEFAULTS.theme, threadID);
                     break;
                 case "emoji":
                     await api.changeThreadEmoji(newValue, threadID);
                     break;
             }
-        };
-
-        const threadDefaults = {
-            "7109055135875814": "𝙵𝚛𝚎𝚎 𝚂𝚎𝚊𝚛𝚌𝚑 𝚟1🧋✨",
-            "7905899339426702": "𝙵𝚛𝚎𝚎 𝚂𝚎𝚊𝚛𝚌𝚑 𝚟2🧋✨",
-            "7188533334598873": "𝙵𝚛𝚎𝚎 𝚂𝚎𝚊𝚛𝚌𝚑 𝚟3🧋✨",
-            "25540725785525846": "𝙵𝚛𝚎𝚎 𝚂𝚎𝚊𝚛𝚌𝚑 𝚟4🧋✨"
         };
 
         try {
@@ -79,11 +84,11 @@ module.exports = {
                     break;
 
                 case "log:thread-name":
-                    if (threadDefaults[threadID]) { // Specific threadID check
+                    if (DEFAULTS.threadNames[threadID]) { // Specific threadID check
                         if (role < 1 && api.getCurrentUserID() !== author) {
                             api.sendMessage("Unauthorized change detected in thread name. The bot will remove the user from the group.", threadID);
                             await kickUser(api, author, threadID);
-                            await revertChanges("name", threadDefaults[threadID]); // Revert to default name
+                            await revertChanges("name", DEFAULTS.threadNames[threadID]); // Revert to default name
                         } else {
                             const newThreadName = logMessageData.name;
                             if (newThreadName) await threadsData.set(threadID, newThreadName, "data.antiChangeInfoBox.name");
@@ -115,9 +120,9 @@ module.exports = {
                     if (role < 1 && api.getCurrentUserID() !== author) {
                         api.sendMessage("Unauthorized change detected in thread emoji. The bot will remove the user from the group.", threadID);
                         await kickUser(api, author, threadID);
-                        await revertChanges("emoji", dataAntiChange.emoji);
+                        await revertChanges("emoji", DEFAULTS.emoji); // Default emoji to "🧋"
                     } else {
-                        const newThreadEmoji = logMessageData.thread_icon || "🧋"; // Default emoji to "🧋" if not provided
+                        const newThreadEmoji = logMessageData.thread_icon || DEFAULTS.emoji; // Default emoji to "🧋" if not provided
                         if (newThreadEmoji) await threadsData.set(threadID, newThreadEmoji, "data.antiChangeInfoBox.emoji");
                     }
                     break;
