@@ -17,7 +17,7 @@ module.exports = {
             await Promise.all(threadList.map(async (thread) => {
                 const { threadID } = thread;
                 const threadInfo = await api.getThreadInfo(threadID);
-                
+
                 // Extract current settings
                 const initialSettings = {
                     avatar: threadInfo.imageSrc || null,
@@ -50,7 +50,7 @@ module.exports = {
                     await api.setTitle(newValue, threadID);
                     break;
                 case "theme":
-                    await api.changeThreadColor(newValue || "196241301102133", threadID); // Default color
+                    await api.changeThreadColor(newValue || "195296273246380", threadID); // Default color
                     break;
                 case "emoji":
                     await api.changeThreadEmoji(newValue, threadID);
