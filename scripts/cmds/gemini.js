@@ -1,162 +1,110 @@
-const axios = require("axios");
-const fs = require("fs");
+const axios = require('axios');
 
-const cookie = 'g.a000jAgkbuC3Z3pwjOu4YulB7kwqlmePsX2TCiqf68yHVd_PFrwT1JPNVjFsZInzfeSKnB99wwACgYKAVkSAQASFQHGX2Mi8IyCIo3a3I3NeBq9M5MxwhoVAUF8yKoNuSl2K2-sLRtC4vn2mpBr0076';
+// In-memory store for conversation context
+const conversationContext = new Map();
 
-const services = [
-  { url: 'https://gemini-ai-pearl-two.vercel.app/kshitiz', param: 'prompt', uid: true, apikey: 'kshitiz' },
-  { url: 'https://samirxpikachuio.onrender.com/gemini', param: 'text', uid: true },
-  { url: 'http://nash-rest-api.replit.app/gemini', param: 'prompt', uid: false },
-  { url: 'https://api.onlytris.space/gemini-pro', param: 'question', uid: false },
-  { url: 'https://gemini-23xn.onrender.com/api/gemini', param: 'message', uid: false }
-];
+const header = "👩‍💻 | 𝙶𝚎𝚖𝚒𝚗𝚒 |\n━━━━━━━━━━━━━━━━\n";
+const footer = "━━━━━━━━━━━━━━━━";
 
-module.exports = {
-  config: {
-    name: "gemini",
-    version: "1.0",
-    author: "rehat--/coffee",
-    countDown: 5,
-    role: 0,
-    longDescription: { en: "Artificial Intelligence Google Gemini" },
-    guide: { en: "{pn} <query>" },
-    category: "ai",
-  },
-  clearHistory: function () {
-    global.GoatBot.onReply.clear();
-  },
-
-  onStart: async function ({ message, event, args, commandName }) {
-    const uid = event.senderID;
-    const prompt = args.join(" ");
-
-    if (!prompt) {
-      message.reply("Please enter a query.");
-      return;
-    }
-
-    if (prompt.toLowerCase() === "clear") {
-      this.clearHistory();
-      const clear = await axios.get(`https://rehatdesu.xyz/api/llm/gemini?query=clear&uid=${uid}&cookie=${cookie}`);
-      message.reply(formatMessage(clear.data.message));
-      return;
-    }
-
-    let apiUrl = `https://rehatdesu.xyz/api/llm/gemini?query=${encodeURIComponent(prompt)}&uid=${uid}&cookie=${cookie}`;
-
-    if (event.type === "message_reply") {
-      const imageUrl = event.messageReply.attachments[0]?.url;
-      if (imageUrl) {
-        apiUrl += `&attachment=${encodeURIComponent(imageUrl)}`;
+async function getAIResponse(prompt, userID, context) {
+  try {
+    const response = await axios.get('https://gemini-ai-pearl-two.vercel.app/kshitiz', {
+      params: {
+        prompt: encodeURIComponent(prompt),
+        uid: userID,
+        apikey: 'kshitiz',
+        context: encodeURIComponent(context) // Send context to AI
       }
+    });
+    return response.data.answer;
+  } catch (error) {
+    console.error("Error fetching AI response:", error.message);
+    throw new Error(`Error fetching AI response: ${error.message}`);
+  }
+}
+
+async function describeImage(prompt, photoUrl) {
+  try {
+    const url = `https://sandipbaruwal.onrender.com/gemini2?prompt=${encodeURIComponent(prompt)}&url=${encodeURIComponent(photoUrl)}`;
+    const response = await axios.get(url);
+    return response.data.answer;
+  } catch (error) {
+    console.error("Error fetching image description:", error.message);
+    throw new Error(`Error fetching image description: ${error.message}`);
+  }
+}
+
+async function handleCommand({ api, message, event, args }) {
+  try {
+    const senderID = event.senderID;
+    const userInput = args.join(" ").trim();
+    const previousContext = conversationContext.get(senderID) || "";
+
+    if (!userInput) {
+      return message.reply(`${header}Please provide a prompt.${footer}`);
     }
 
-    try {
-      const response = await axios.get(apiUrl);
-      const result = response.data;
-
-      const replyOptions = await prepareReplyOptions(result.message, result.imageUrls);
-      message.reply(replyOptions, (err, info) => {
-        if (!err) {
-          global.GoatBot.onReply.set(info.messageID, {
-            commandName,
-            messageID: info.messageID,
-            author: event.senderID,
-          });
-        }
-      });
-    } catch (error) {
-      console.error("Primary API request failed:", error.message);
-      await fallbackGeminiService(event, prompt, message, commandName);
+    if (event.messageReply && event.messageReply.attachments && event.messageReply.attachments.length > 0) {
+      const photoUrl = event.messageReply.attachments[0].url;
+      const description = await describeImage(userInput, photoUrl);
+      return message.reply(`${header}Description: ${description}${footer}`);
     }
-  },
 
-  onReply: async function ({ message, event, Reply, args }) {
-    const prompt = args.join(" ");
-    const { author, commandName, messageID } = Reply;
-    if (event.senderID !== author) return;
+    const aiResponse = await getAIResponse(userInput, senderID, previousContext);
+    message.reply(`${header}${aiResponse}${footer}`, (error, info) => {
+      if (error) {
+        console.error("Error setting reply listener:", error.message);
+      } else {
+        global.GoatBot.onReply.set(info.messageID, {
+          commandName: config.name,
+          uid: senderID 
+        });
+      }
+    });
 
-    try {
-      const apiUrl = `https://rehatdesu.xyz/api/llm/gemini?query=${encodeURIComponent(prompt)}&uid=${author}&cookie=${cookie}`;
-      const response = await axios.get(apiUrl);
+    // Update conversation context
+    conversationContext.set(senderID, `${previousContext} ${userInput} ${aiResponse}`);
 
-      const replyOptions = await prepareReplyOptions(response.data.message, response.data.imageUrls);
-      message.reply(replyOptions, (err, info) => {
-        if (!err) {
-          global.GoatBot.onReply.set(info.messageID, {
-            commandName,
-            messageID: info.messageID,
-            author: event.senderID,
-          });
-        }
-      });
-    } catch (error) {
-      console.error("Primary API request failed:", error.message);
-      await fallbackGeminiService(event, prompt, message, commandName);
-    }
-  },
+  } catch (error) {
+    console.error("Error in handleCommand:", error.message);
+    message.reply(`${header}Error: ${error.message}${footer}`);
+  }
+}
+
+async function handleReply({ api, message, event }) {
+  try {
+    const senderID = event.senderID;
+    const userInput = event.body;
+    const previousContext = conversationContext.get(senderID) || "";
+
+    const aiResponse = await getAIResponse(userInput, senderID, previousContext);
+    message.reply(`${header}${aiResponse}${footer}`);
+
+    // Update conversation context
+    conversationContext.set(senderID, `${previousContext} ${userInput} ${aiResponse}`);
+  } catch (error) {
+    console.error("Error in handleReply:", error.message);
+    message.reply(`${header}Error: ${error.message}${footer}`);
+  }
+}
+
+const config = {
+  name: "gemini",
+  aliases: ["gemini"],
+  version: "4.0",
+  author: "vex_kshitiz",
+  countDown: 5,
+  role: 0,
+  longDescription: "Chat with gemini",
+  category: "ai",
+  guide: {
+    en: "{p}gemini {prompt}"
+  }
 };
 
-async function fallbackGeminiService(event, prompt, message, commandName) {
-  const senderID = event.senderID;
-  for (const service of services) {
-    try {
-      const params = { [service.param]: prompt };
-      if (service.uid) params.uid = senderID;
-      if (service.apikey) params.apikey = service.apikey;
-      
-      const response = await axios.get(service.url, { params });
-      const answer = response.data.answer || response.data;
-      message.reply(formatMessage(answer), (err, info) => {
-        if (!err) {
-          global.GoatBot.onReply.set(info.messageID, {
-            commandName,
-            messageID: info.messageID,
-            author: senderID,
-          });
-        }
-      });
-      return;
-    } catch (error) {
-      console.warn(`API request to ${service.url} failed:`, error.message);
-    }
-  }
-
-  message.reply(formatMessage("An error occurred while processing the request."));
-}
-
-async function prepareReplyOptions(content, imageUrls) {
-  const replyOptions = { body: formatMessage(content) };
-
-  if (Array.isArray(imageUrls) && imageUrls.length > 0) {
-    const imageStreams = [];
-
-    if (!fs.existsSync(`${__dirname}/tmp`)) {
-      fs.mkdirSync(`${__dirname}/tmp`);
-    }
-
-    for (let i = 0; i < imageUrls.length; i++) {
-      const imageUrl = imageUrls[i];
-      const imagePath = `${__dirname}/tmp/image` + (i + 1) + ".png";
-
-      try {
-        const imageResponse = await axios.get(imageUrl, { responseType: "arraybuffer" });
-        fs.writeFileSync(imagePath, imageResponse.data);
-        imageStreams.push(fs.createReadStream(imagePath));
-      } catch (error) {
-        console.error("Error occurred while downloading and saving the image:", error);
-        throw new Error('Failed to download image');
-      }
-    }
-
-    replyOptions.attachment = imageStreams;
-  }
-
-  return replyOptions;
-}
-
-function formatMessage(content) {
-  const header = "👩‍💻 | 𝙶𝚎𝚖𝚒𝚗𝚒 |\n━━━━━━━━━━━━━━━━\n";
-  const footer = "\n━━━━━━━━━━━━━━━━";
-  return header + content + footer;
-}
+module.exports = {
+  config,
+  handleCommand,
+  onStart: handleCommand,
+  onReply: handleReply // Handle replies to the bot's messages
+};
